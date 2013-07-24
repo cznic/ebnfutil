@@ -33,6 +33,7 @@ Operand =  Literal
 	| QualifiedIdent "(" [ ExpressionList ] ")"
 	| "(" Expression ")"  .
 QualifiedIdent = identifier [ "." identifier ] .
+Start = Expression .
 Term = Factor {
 		 (
 			  andnot

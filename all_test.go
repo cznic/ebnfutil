@@ -13,8 +13,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
-
-	"code.google.com/p/go.exp/ebnf"
 )
 
 func dbg(s string, va ...interface{}) {
@@ -60,7 +58,7 @@ func TestString(t *testing.T) {
 		}
 
 		src := bytes.NewBuffer(bsrc)
-		g, err := ebnf.Parse(fname, src)
+		g, err := Parse(fname, src)
 		if err != nil {
 			t.Errorf("%d/%d %v", i, len(testfiles), err)
 			continue
@@ -73,7 +71,45 @@ func TestString(t *testing.T) {
 			continue
 		}
 
-		if g, e := Grammar(g).String(), string(ref); g != e {
+		if g, e := g.String(), string(ref); g != e {
+			t.Errorf("%d/%d\n----\ngot:\n%s\n----\nexp:\n%s", i, len(testfiles), g, e)
+			continue
+		}
+
+		t.Log(i, fname)
+	}
+}
+
+func TestAnalyze(t *testing.T) {
+	for i, fname := range testfiles {
+		fname = filepath.Join(testdata, fname)
+		bsrc, err := ioutil.ReadFile(fname)
+		if err != nil {
+			t.Errorf("%d/%d %v", i, len(testfiles), err)
+			continue
+		}
+
+		src := bytes.NewBuffer(bsrc)
+		g, err := Parse(fname, src)
+		if err != nil {
+			t.Errorf("%d/%d %v", i, len(testfiles), err)
+			continue
+		}
+
+		sname := fname[:len(fname)-len(".ebnf")] + ".report"
+		ref, err := ioutil.ReadFile(sname)
+		if err != nil {
+			t.Errorf("%d/%d %v", i, len(testfiles), err)
+			continue
+		}
+
+		r, err := g.Analyze("Start")
+		if err != nil {
+			t.Errorf("%d/%d %v", i, len(testfiles), err)
+			continue
+		}
+
+		if g, e := r.String(), string(ref); g != e {
 			t.Errorf("%d/%d\n----\ngot:\n%s\n----\nexp:\n%s", i, len(testfiles), g, e)
 			continue
 		}

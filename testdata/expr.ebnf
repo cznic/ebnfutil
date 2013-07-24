@@ -13,6 +13,7 @@ andnot 	= "&^" .
 lsh 	= "<<" .
 rsh 	= ">>" .
 
+Start = Expression .
 Expression = Term  { ( "^" | "|" | "-" | "+" ) Term } .
 ExpressionList = Expression { "," Expression } .
 Factor = [ "^" | "!" | "-" | "+" ] Operand .

@@ -235,7 +235,7 @@ SimpleStmt =  EmptyStmt
 	| ShortVarDecl  .
 Slice = "[" [ Expression ] ":" [ Expression ] "]" .
 SliceType = "[" "]" ElementType .
-SourceFile = PackageClause ";" { ImportDecl ";" } { TopLevelDecl ";" } .
+Start = PackageClause ";" { ImportDecl ";" } { TopLevelDecl ";" } .
 Statement =  Declaration
 	| LabeledStmt
 	| SimpleStmt

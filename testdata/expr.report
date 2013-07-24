@@ -1,0 +1,5 @@
+Lexical ["andnot" "boolean" "float" "identifier" "imaginary" "integer" "lsh" "rsh" "str"]
+Literals ["!" "%" "&" "&^" "(" ")" "*" "+" "," "-" "." "/" "<<" ">>" "^" "false" "true" "|"]
+NonTerminals ["Expression" "ExpressionList" "Factor" "Literal" "Operand" "QualifiedIdent" "Start" "Term"]
+Ranges []
+Tokens ["andnot" "boolean" "float" "identifier" "imaginary" "integer" "lsh" "rsh" "str"]
