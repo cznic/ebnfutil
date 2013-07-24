@@ -1,0 +1,46 @@
+andnot = "&^" .
+boolean = "true" | "false" .
+float = .
+identifier = .
+imaginary = .
+integer = .
+lsh = "<<" .
+rsh = ">>" .
+str = .
+
+Expression = Term {
+		 (
+			  "^"
+			| "|"
+			| "-"
+			| "+" 
+		  ) Term
+	  } .
+ExpressionList = Expression { "," Expression } .
+Factor = [
+		  "^"
+		| "!"
+		| "-"
+		| "+" 
+	  ] Operand .
+Literal =  boolean
+	| float
+	| QualifiedIdent
+	| imaginary
+	| integer
+	| str  .
+Operand =  Literal
+	| QualifiedIdent "(" [ ExpressionList ] ")"
+	| "(" Expression ")"  .
+QualifiedIdent = identifier [ "." identifier ] .
+Term = Factor {
+		 (
+			  andnot
+			| "&"
+			| lsh
+			| rsh
+			| "%"
+			| "/"
+			| "*" 
+		  ) Factor
+	  } .
