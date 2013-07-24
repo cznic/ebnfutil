@@ -15,14 +15,11 @@ import (
 	"strings"
 
 	"code.google.com/p/go.exp/ebnf"
-	"github.com/cznic/fsm"
 	"github.com/cznic/strutil"
 )
 
 //TODO Reduce
 //TODO ToBNF
-//TODO ToNFA
-//TODO Equals?
 
 var (
 	altA   = map[bool]string{false: "%i\n ", true: " "}
@@ -98,6 +95,7 @@ func (g Grammar) Analyze(start string) (r *Report, err error) {
 			f(name, x.Body)
 		case *ebnf.Name:
 			name2 := x.String
+			r.UsedBy[name2][name] = true
 			if ast.IsExported(name) && !ast.IsExported(name2) {
 				r.Tokens[name2] = true
 			}
@@ -117,6 +115,10 @@ func (g Grammar) Analyze(start string) (r *Report, err error) {
 		NonTerminals: map[string]bool{},
 		Ranges:       map[struct{ Begin, End string }]bool{},
 		Tokens:       map[string]bool{},
+		UsedBy:       map[string]map[string]bool{},
+	}
+	for name := range g {
+		r.UsedBy[name] = map[string]bool{}
 	}
 	f(start, g[start])
 	return
@@ -132,7 +134,7 @@ func (g Grammar) Analyze(start string) (r *Report, err error) {
 // to the grammar. Names for such productions are obtained via nameInventor.
 // The name of the production for which the item must be expaned is passed to
 // the nameInventor function. nameInventor must not return a name already
-// existing in the g nor it may return any name more than once.
+// existing in the grammar nor it may return any name more than once.
 //
 // start is the name of the start production.
 func (g Grammar) _BNF(start string, nameInventor func(name string) string) (r Grammar, err error) {
@@ -153,26 +155,13 @@ func (g Grammar) _BNF(start string, nameInventor func(name string) string) (r Gr
 }
 
 // IsRegular returns wheter g is a regular language. In such case the start
-// production must be the only (pseudo) non-terminal in the grammar. All other
-// productions must be lexical and at least one of them must be used in the
-// start production.
-func (g Grammar) _IsRegular() (isRegular bool, err error) {
-	panic("TODO")
-}
-
-// NFA returns the NFA for grammar g.
+// production must be the only non-terminal in the grammar.
 //
 // start is the name of the start production.
 //
-//BUG(jnml) NFA signature will probably change (WIP).
-func (g Grammar) _NFA(start string) (r *fsm.NFA, err error) {
-	var f func(ebnf.Expression)
-	f = func(expr ebnf.Expression) {
-	}
-
-	r = fsm.NewNFA()
-
-	_ = f
+// Note: The grammar should be verified before invoking this method. Otherwise
+// errors may occur.
+func (g Grammar) _IsRegular(start string) (isRegular bool, err error) {
 	panic("TODO")
 }
 
@@ -285,11 +274,24 @@ type Report struct {
 	// Set of all lexical production names referenced from within a
 	// non-terminal production.
 	Tokens map[string]bool
+	// UsedBy is map of production names to the list of production names
+	// which refers to them, ie. a cross-reference. For example a grammar:
+	//
+	//        Start = number | Start number .
+	//        number = "0" … "9" .
+	//
+	// produces:
+	//
+	//        map[string]map[string]bool{
+	//                "Start":map[string]bool{"Start": true},
+	//                "number":map[string]bool{"Start": true},
+	//        }
+	UsedBy map[string]map[string]bool
 }
 
 // String implements fmt.Stringer.
 func (r *Report) String() string {
-	a := [5]string{}
+	a := [6]string{}
 	a[0] = fmt.Sprintf("Lexical %s", str(r.Lexical))
 	a[1] = fmt.Sprintf("Literals %s", str(r.Literals))
 	a[2] = fmt.Sprintf("NonTerminals %s", str(r.NonTerminals))
@@ -300,6 +302,21 @@ func (r *Report) String() string {
 	sort.Strings(aa)
 	a[3] = fmt.Sprintf("Ranges %s", fmt.Sprintf("[%s]", strings.Join(aa, " ")))
 	a[4] = fmt.Sprintf("Tokens %s", str(r.Tokens))
+	aa = []string{}
+	for v := range r.UsedBy {
+		aa = append(aa, v)
+	}
+	sort.Strings(aa)
+	bb := []string{}
+	for _, v := range aa {
+		aaa := []string{}
+		for vv := range r.UsedBy[v] {
+			aaa = append(aaa, fmt.Sprintf("%q", vv))
+		}
+		sort.Strings(aaa)
+		bb = append(bb, fmt.Sprintf("\t%q: [%s]", v, strings.Join(aaa, " ")))
+	}
+	a[5] = fmt.Sprintf("UsedBy:\n%s", strings.Join(bb, "\n"))
 	return strings.Join(a[:], "\n") + "\n"
 }
 
