@@ -154,17 +154,6 @@ func (g Grammar) _BNF(start string, nameInventor func(name string) string) (r Gr
 	return
 }
 
-// IsRegular returns wheter g is a regular language. In such case the start
-// production must be the only non-terminal in the grammar.
-//
-// start is the name of the start production.
-//
-// Note: The grammar should be verified before invoking this method. Otherwise
-// errors may occur.
-func (g Grammar) _IsRegular(start string) (isRegular bool, err error) {
-	panic("TODO")
-}
-
 // String implements fmt.Stringer.
 func (g Grammar) String() string {
 	term, nterm := []string{}, []string{}
