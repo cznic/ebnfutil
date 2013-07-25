@@ -23,13 +23,13 @@ Factor = [
 		| "-"
 		| "+" 
 	  ] Operand .
-Literal =  boolean
+Literal = boolean
 	| float
 	| QualifiedIdent
 	| imaginary
 	| integer
 	| str  .
-Operand =  Literal
+Operand = Literal
 	| QualifiedIdent "(" [ ExpressionList ] ")"
 	| "(" Expression ")"  .
 QualifiedIdent = identifier [ "." identifier ] .

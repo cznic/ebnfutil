@@ -19,10 +19,10 @@ import (
 )
 
 //TODO Reduce
-//TODO ToBNF
 
 var (
-	altA   = map[bool]string{false: "%i\n ", true: " "}
+	altA   = map[bool]string{false: "%i\n", true: " "}
+	altT   = map[bool]string{false: "%i\n", true: ""}
 	altZ   = map[bool]string{false: " %u", true: " "}
 	altBar = map[bool]string{false: "", true: " |"}
 	grpL   = map[bool]string{false: " (", true: " (\n%i"}
@@ -47,6 +47,8 @@ func Parse(filename string, src io.Reader) (g Grammar, err error) {
 
 // Analyze analyzes g with starting production 'start' and returns a Report
 // about it.
+//
+// 'start' is the name of the start production.
 //
 // Note: The grammar should be verified before invoking this method. Otherwise
 // errors may occur.
@@ -134,22 +136,114 @@ func (g Grammar) Analyze(start string) (r *Report, err error) {
 // to the grammar. Names for such productions are obtained via nameInventor.
 // The name of the production for which the item must be expaned is passed to
 // the nameInventor function. nameInventor must not return a name already
-// existing in the grammar nor it may return any name more than once.
+// existing in the grammar nor it may return any name more than once.  Nil
+// nameInventor can be passed to use a default implementation.
 //
-// start is the name of the start production.
-func (g Grammar) _BNF(start string, nameInventor func(name string) string) (r Grammar, err error) {
-	var f func(ebnf.Expression) ebnf.Expression
-	f = func(expr ebnf.Expression) ebnf.Expression {
+// 'start' is the name of the start production.
+func (g Grammar) BNF(start string, nameInventor func(name string) string) (r Grammar, repetitions map[string]bool, err error) {
+	if nameInventor == nil {
+		names := map[string]bool{}
+		for _, name := range []string{
+			"break", "default", "func", "interface", "select",
+			"case", "defer", "go", "map", "struct",
+			"chan", "else", "goto", "package", "switch",
+			"const", "fallthrough", "if", "range", "type",
+			"continue", "for", "import", "return", "var",
+		} {
+			names[name] = true
+		}
+		for name := range g {
+			if names[name] {
+				err = fmt.Errorf("Reserved word %q cannot be used as a production name.", name)
+				break
+			}
+
+			names[name] = true
+		}
+		nameInventor = func(name string) (s string) {
+			const sep = "_"
+			for i := 0; ; i++ {
+				switch {
+				case i == 0 && sep == "":
+					s = fmt.Sprintf("%s%s", name, sep)
+				case i == 0:
+					continue
+				case i != 0:
+					s = fmt.Sprintf("%s%s%d", name, sep, i)
+				}
+				if _, ok := names[s]; !ok {
+					names[s] = true
+					return s
+				}
+			}
+		}
+	}
+
+	var f func(string, int, ebnf.Expression) ebnf.Expression
+
+	add := func(name string, expr ebnf.Expression) (nm *ebnf.Name) {
+		nm = &ebnf.Name{String: name}
+		r[name] = &ebnf.Production{Name: nm, Expr: f(name, 0, expr)}
+		return
+	}
+
+	f = func(name string, nest int, expr ebnf.Expression) (r ebnf.Expression) {
+		nest++
 		switch x := expr.(type) {
-		//TODO
+		case nil:
+			return nil
+		case ebnf.Alternative:
+			switch nest {
+			case 1:
+				y := ebnf.Alternative{}
+				for _, v := range x {
+					y = append(y, f(name, nest, v))
+				}
+				return y
+			default:
+				return add(nameInventor(name), x)
+			}
+		case *ebnf.Option:
+			return add(nameInventor(name), ebnf.Alternative{
+				0: nil,
+				1: x.Body,
+			})
+		case *ebnf.Repetition:
+			newName := nameInventor(name)
+			repetitions[newName] = true
+			return add(newName, ebnf.Alternative{
+				0: nil,
+				1: ebnf.Sequence{
+					0: &ebnf.Name{String: newName},
+					1: x.Body,
+				},
+			})
+		case *ebnf.Group:
+			return add(nameInventor(name), x.Body)
+		case ebnf.Sequence:
+			y := ebnf.Sequence{}
+			for _, v := range x {
+				y = append(y, f(name, nest, v))
+			}
+			return y
+		case *ebnf.Name:
+			return &ebnf.Name{String: x.String}
+		case *ebnf.Token:
+			return &ebnf.Token{String: x.String}
+		case *ebnf.Range:
+			return &ebnf.Range{
+				Begin: &ebnf.Token{String: x.Begin.String},
+				End:   &ebnf.Token{String: x.End.String},
+			}
 		default:
 			panic(fmt.Sprintf("internal error %T(%v)", x, x))
 		}
 	}
 
 	r = Grammar{}
+	repetitions = map[string]bool{}
 	for name, prod := range g {
-		r[name] = &ebnf.Production{Name: &ebnf.Name{String: name}, Expr: f(prod.Expr)}
+		r[name] = &ebnf.Production{Name: &ebnf.Name{String: name}, Expr: f(name, 0, prod.Expr)}
 	}
 	return
 }
@@ -171,53 +265,61 @@ func (g Grammar) String() string {
 	var buf bytes.Buffer
 	f := strutil.IndentFormatter(&buf, "\t")
 
-	var h func(ebnf.Expression, bool)
-	h = func(expr ebnf.Expression, newLine bool) {
+	var h func(ebnf.Expression, bool, bool)
+	h = func(expr ebnf.Expression, newLine, tld bool) {
 		switch x := expr.(type) {
 		case nil:
 			// nop
 		case *ebnf.Production:
 			name := x.Name.String
 			f.Format("%s =%i", name)
-			h(g[name].Expr, true)
+			h(g[name].Expr, true, true)
 			f.Format(" .%u\n")
 		case ebnf.Alternative:
-			switch isShort(x) {
-			case true:
+			hasNil := false
+			for _, v := range x {
+				if hasNil = v == nil; hasNil {
+					break
+				}
+			}
+			switch {
+			case isShort(x) && !hasNil:
 				for i, v := range x {
 					f.Format(altBar[i != 0])
-					h(v, false)
+					h(v, false, false)
 				}
 			default:
 				for i, v := range x {
-					switch i {
-					case 0:
+					switch {
+					case i == 0 && !tld:
 						f.Format(altA[newLine])
+					case i == 0 && tld:
+						f.Format(altT[newLine])
 					default:
 						f.Format("\n|")
 					}
-					h(v, false)
+					h(v, false, false)
 				}
 				f.Format(altZ[newLine])
 			}
 		case ebnf.Sequence:
 			for _, v := range x {
-				h(v, false)
+				h(v, false, false)
 			}
 		case *ebnf.Group:
 			long := !isShort(x.Body)
 			f.Format(grpL[long])
-			h(x.Body, long)
+			h(x.Body, long, false)
 			f.Format(grpR[long])
 		case *ebnf.Option:
 			long := !isShort(x.Body)
 			f.Format(optL[long])
-			h(x.Body, long)
+			h(x.Body, long, false)
 			f.Format(optR[long])
 		case *ebnf.Repetition:
 			long := !isShort(x.Body)
 			f.Format(repL[long])
-			h(x.Body, long)
+			h(x.Body, long, false)
 			f.Format(repR[long])
 		case *ebnf.Token:
 			f.Format(" %q", x.String)
@@ -231,12 +333,12 @@ func (g Grammar) String() string {
 	}
 
 	for _, name := range term {
-		h(g[name], false)
+		h(g[name], false, false)
 	}
 
 	f.Format("\n")
 	for _, name := range nterm {
-		h(g[name], false)
+		h(g[name], false, false)
 	}
 	return buf.String()
 }
@@ -263,8 +365,8 @@ type Report struct {
 	// Set of all lexical production names referenced from within a
 	// non-terminal production.
 	Tokens map[string]bool
-	// UsedBy is map of production names to the list of production names
-	// which refers to them, ie. a cross-reference. For example a grammar:
+	// UsedBy is map of production names to a set of production names which
+	// refers to them, ie. a cross-reference. For example a grammar:
 	//
 	//        Start = number | Start number .
 	//        number = "0" … "9" .

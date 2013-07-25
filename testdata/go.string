@@ -1,10 +1,10 @@
-add_op =  "+"
+add_op = "+"
 	| "-"
 	| "|"
 	| "^"  .
 assign_op = [ add_op | mul_op ] "=" .
 big_u_value = "\\" "U" hex_digit hex_digit hex_digit hex_digit hex_digit hex_digit hex_digit hex_digit .
-binary_op =  "||"
+binary_op = "||"
 	| "&&"
 	| rel_op
 	| add_op
@@ -26,23 +26,23 @@ escaped_char = "\\" (
 		| "\"" 
 	  ) .
 exponent = ( "e" | "E" ) [ "+" | "-" ] decimals .
-float_lit =  decimals "." [ decimals ] [ exponent ]
+float_lit = decimals "." [ decimals ] [ exponent ]
 	| decimals exponent
 	| "." decimals [ exponent ]  .
 hex_byte_value = "\\" "x" hex_digit hex_digit .
-hex_digit =  "0" … "9"
+hex_digit = "0" … "9"
 	| "A" … "F"
 	| "a" … "f"  .
 hex_lit = "0" ( "x" | "X" ) hex_digit { hex_digit } .
 identifier = letter { letter | unicode_digit } .
 imaginary_lit = ( decimals | float_lit ) "i" .
-int_lit =  decimal_lit
+int_lit = decimal_lit
 	| octal_lit
 	| hex_lit  .
 interpreted_string_lit = "\"" { unicode_value | byte_value } "\"" .
 letter = unicode_letter | "_" .
 little_u_value = "\\" "u" hex_digit hex_digit hex_digit hex_digit .
-mul_op =  "*"
+mul_op = "*"
 	| "/"
 	| "%"
 	| "<<"
@@ -54,7 +54,7 @@ octal_byte_value = "\\" octal_digit octal_digit octal_digit .
 octal_digit = "0" … "7" .
 octal_lit = "0" { octal_digit } .
 raw_string_lit = "`" { unicode_char | newline } "`" .
-rel_op =  "=="
+rel_op = "=="
 	| "!="
 	| "<"
 	| "<="
@@ -62,7 +62,7 @@ rel_op =  "=="
 	| ">="  .
 rune_lit = "'" ( unicode_value | byte_value ) "'" .
 string_lit = raw_string_lit | interpreted_string_lit .
-unary_op =  "+"
+unary_op = "+"
 	| "-"
 	| "!"
 	| "^"
@@ -72,7 +72,7 @@ unary_op =  "+"
 unicode_char = .
 unicode_digit = .
 unicode_letter = .
-unicode_value =  unicode_char
+unicode_value = unicode_char
 	| little_u_value
 	| big_u_value
 	| escaped_char  .
@@ -84,14 +84,14 @@ ArrayType = "[" ArrayLength "]" ElementType .
 Assignment = ExpressionList assign_op ExpressionList .
 BaseType = Type .
 BaseTypeName = identifier .
-BasicLit =  int_lit
+BasicLit = int_lit
 	| float_lit
 	| imaginary_lit
 	| rune_lit
 	| string_lit  .
 Block = "{" StatementList "}" .
 BreakStmt = "break" [ Label ] .
-BuiltinArgs =  Type [ "," ArgumentList ]
+BuiltinArgs = Type [ "," ArgumentList ]
 	| ArgumentList  .
 BuiltinCall = identifier "(" [ BuiltinArgs [ "," ] ] ")" .
 Call = "(" [ ArgumentList [ "," ] ] ")" .
@@ -100,7 +100,7 @@ ChannelType = (
 		  "chan" [ "<-" ]
 		| "<-" "chan" 
 	  ) ElementType .
-CommCase =  "case" ( SendStmt | RecvStmt )
+CommCase = "case" ( SendStmt | RecvStmt )
 	| "default"  .
 CommClause = CommCase ":" StatementList .
 CompositeLit = LiteralType LiteralValue .
@@ -114,7 +114,7 @@ ConstSpec = IdentifierList [
 	  ] .
 ContinueStmt = "continue" [ Label ] .
 Conversion = Type "(" Expression [ "," ] ")" .
-Declaration =  ConstDecl
+Declaration = ConstDecl
 	| TypeDecl
 	| VarDecl  .
 DeferStmt = "defer" Expression .
@@ -124,10 +124,10 @@ ElementList = Element { "," Element } .
 ElementType = Type .
 EmptyStmt = .
 ExprCaseClause = ExprSwitchCase ":" StatementList .
-ExprSwitchCase =  "case" ExpressionList
+ExprSwitchCase = "case" ExpressionList
 	| "default"  .
 ExprSwitchStmt = "switch" [ SimpleStmt ";" ] [ Expression ] "{" { ExprCaseClause } "}" .
-Expression =  UnaryExpr
+Expression = UnaryExpr
 	| Expression binary_op UnaryExpr  .
 ExpressionList = Expression { "," Expression } .
 ExpressionStmt = Expression .
@@ -170,10 +170,10 @@ Key = FieldName | ElementIndex .
 KeyType = Type .
 Label = identifier .
 LabeledStmt = Label ":" Statement .
-Literal =  BasicLit
+Literal = BasicLit
 	| CompositeLit
 	| FunctionLit  .
-LiteralType =  StructType
+LiteralType = StructType
 	| ArrayType
 	| "[" "..." "]" ElementType
 	| SliceType
@@ -184,9 +184,9 @@ MapType = "map" "[" KeyType "]" ElementType .
 MethodDecl = "func" Receiver MethodName ( Function | Signature ) .
 MethodExpr = ReceiverType "." MethodName .
 MethodName = identifier .
-MethodSpec =  MethodName Signature
+MethodSpec = MethodName Signature
 	| InterfaceTypeName  .
-Operand =  Literal
+Operand = Literal
 	| OperandName
 	| MethodExpr
 	| "(" Expression ")"  .
@@ -198,7 +198,7 @@ ParameterList = ParameterDecl { "," ParameterDecl } .
 Parameters = "(" [ ParameterList [ "," ] ] ")" .
 PointerType = "*" BaseType .
 PostStmt = SimpleStmt .
-PrimaryExpr =  Operand
+PrimaryExpr = Operand
 	| Conversion
 	| BuiltinCall
 	| PrimaryExpr Selector
@@ -212,7 +212,7 @@ RangeClause = (
 		| IdentifierList ":=" 
 	  ) "range" Expression .
 Receiver = "(" [ identifier ] [ "*" ] BaseTypeName ")" .
-ReceiverType =  TypeName
+ReceiverType = TypeName
 	| "(" "*" TypeName ")"
 	| "(" ReceiverType ")"  .
 RecvExpr = Expression .
@@ -227,7 +227,7 @@ Selector = "." identifier .
 SendStmt = Channel "<-" Expression .
 ShortVarDecl = IdentifierList ":=" ExpressionList .
 Signature = Parameters [ Result ] .
-SimpleStmt =  EmptyStmt
+SimpleStmt = EmptyStmt
 	| ExpressionStmt
 	| SendStmt
 	| IncDecStmt
@@ -236,7 +236,7 @@ SimpleStmt =  EmptyStmt
 Slice = "[" [ Expression ] ":" [ Expression ] "]" .
 SliceType = "[" "]" ElementType .
 Start = PackageClause ";" { ImportDecl ";" } { TopLevelDecl ";" } .
-Statement =  Declaration
+Statement = Declaration
 	| LabeledStmt
 	| SimpleStmt
 	| GoStmt
@@ -255,10 +255,10 @@ StatementList = { Statement ";" } .
 StructType = "struct" "{" { FieldDecl ";" } "}" .
 SwitchStmt = ExprSwitchStmt | TypeSwitchStmt .
 Tag = string_lit .
-TopLevelDecl =  Declaration
+TopLevelDecl = Declaration
 	| FunctionDecl
 	| MethodDecl  .
-Type =  TypeName
+Type = TypeName
 	| TypeLit
 	| "(" Type ")"  .
 TypeAssertion = "." "(" Type ")" .
@@ -268,7 +268,7 @@ TypeDecl = "type" (
 		| "(" { TypeSpec ";" } ")" 
 	  ) .
 TypeList = Type { "," Type } .
-TypeLit =  ArrayType
+TypeLit = ArrayType
 	| StructType
 	| PointerType
 	| FunctionType
@@ -278,11 +278,11 @@ TypeLit =  ArrayType
 	| ChannelType  .
 TypeName = identifier | QualifiedIdent .
 TypeSpec = identifier Type .
-TypeSwitchCase =  "case" TypeList
+TypeSwitchCase = "case" TypeList
 	| "default"  .
 TypeSwitchGuard = [ identifier ":=" ] PrimaryExpr "." "(" "type" ")" .
 TypeSwitchStmt = "switch" [ SimpleStmt ";" ] TypeSwitchGuard "{" { TypeCaseClause } "}" .
-UnaryExpr =  PrimaryExpr
+UnaryExpr = PrimaryExpr
 	| unary_op UnaryExpr  .
 Value = Expression | LiteralValue .
 VarDecl = "var" (
