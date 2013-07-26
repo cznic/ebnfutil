@@ -4,6 +4,10 @@
 
 // Package ebnfutils (WIP:TODO) provides some utilities for messing with EBNF
 // grammars.
+//
+// Positions attached to particular ebnf package types instances are ignored in
+// most, if not all places. Positions make sense after Parse, but usually no
+// more after mutating the grammar in any way.
 package ebnfutils
 
 import (
@@ -15,10 +19,11 @@ import (
 	"strings"
 
 	"code.google.com/p/go.exp/ebnf"
+	"github.com/cznic/mathutil"
 	"github.com/cznic/strutil"
 )
 
-//TODO Reduce
+//TODO _Reduce
 
 var (
 	altA   = map[bool]string{false: "%i\n", true: " "}
@@ -48,11 +53,9 @@ func Parse(filename string, src io.Reader) (g Grammar, err error) {
 // Analyze analyzes g with starting production 'start' and returns a Report
 // about it.
 //
-// 'start' is the name of the start production.
-//
 // Note: The grammar should be verified before invoking this method. Otherwise
 // errors may occur.
-func (g Grammar) Analyze(start string) (r *Report, err error) {
+func (g Grammar) Analyze() (r *Report, err error) {
 	seen := map[string]bool{}
 	var f func(string, ebnf.Expression)
 	f = func(name string, expr ebnf.Expression) {
@@ -90,10 +93,13 @@ func (g Grammar) Analyze(start string) (r *Report, err error) {
 				f(name, v)
 			}
 		case *ebnf.Group:
+			r.IsBNF = false
 			f(name, x.Body)
 		case *ebnf.Option:
+			r.IsBNF = false
 			f(name, x.Body)
 		case *ebnf.Repetition:
+			r.IsBNF = false
 			f(name, x.Body)
 		case *ebnf.Name:
 			name2 := x.String
@@ -112,6 +118,7 @@ func (g Grammar) Analyze(start string) (r *Report, err error) {
 	}
 
 	r = &Report{
+		IsBNF:        true,
 		Lexical:      map[string]bool{},
 		Literals:     map[string]bool{},
 		NonTerminals: map[string]bool{},
@@ -122,7 +129,9 @@ func (g Grammar) Analyze(start string) (r *Report, err error) {
 	for name := range g {
 		r.UsedBy[name] = map[string]bool{}
 	}
-	f(start, g[start])
+	for name := range g {
+		f(name, g[name])
+	}
 	return
 }
 
@@ -134,7 +143,7 @@ func (g Grammar) Analyze(start string) (r *Report, err error) {
 //
 // Removing the above items requires expanding them via adding new productions
 // to the grammar. Names for such productions are obtained via nameInventor.
-// The name of the production for which the item must be expaned is passed to
+// The name of the production for which the item must be expanded is passed to
 // the nameInventor function. nameInventor must not return a name already
 // existing in the grammar nor it may return any name more than once.  Nil
 // nameInventor can be passed to use a default implementation.
@@ -248,6 +257,153 @@ func (g Grammar) BNF(start string, nameInventor func(name string) string) (r Gra
 	return
 }
 
+// Clone returns a clone of g. Positions are ignored.
+func (g Grammar) Clone() (r Grammar) {
+	var f func(expr ebnf.Expression) ebnf.Expression
+	f = func(expr ebnf.Expression) ebnf.Expression {
+		switch x := expr.(type) {
+		case nil:
+			return nil
+		case ebnf.Alternative:
+			y := ebnf.Alternative{}
+			for _, v := range x {
+				y = append(y, f(v))
+			}
+			return y
+		case ebnf.Sequence:
+			y := ebnf.Sequence{}
+			for _, v := range x {
+				y = append(y, f(v))
+			}
+			return y
+		case *ebnf.Group:
+			return &ebnf.Group{Body: f(x.Body)}
+		case *ebnf.Option:
+			return &ebnf.Option{Body: f(x.Body)}
+		case *ebnf.Repetition:
+			return &ebnf.Repetition{Body: f(x.Body)}
+		case *ebnf.Name:
+			return &ebnf.Name{String: x.String}
+		case *ebnf.Token:
+			return &ebnf.Token{String: x.String}
+		case *ebnf.Range:
+			return &ebnf.Range{
+				Begin: &ebnf.Token{String: x.Begin.String},
+				End:   &ebnf.Token{String: x.End.String},
+			}
+		default:
+			panic(fmt.Sprintf("internal error %T(%v)", x, x))
+		}
+	}
+
+	r = Grammar{}
+	for name, prod := range g {
+		r[name] = &ebnf.Production{Name: &ebnf.Name{String: name}, Expr: f(prod.Expr)}
+	}
+	return
+}
+
+// _Reduce attempts to remove productions from g by inlining eligible
+// productions into the places where they are used. For example this grammar:
+//
+//	Start = "0" Abc "9".
+//	Abc = "abc" .
+//
+// becomes
+//
+//	Start = "0" "abc" "9" .
+//
+// Eligible productions are non self referential (`P = P | Q .`) non terminals
+// used in max maxUsed places. For maxUsed == 0 some sane default number is
+// used.  To always inline eligible productions, pass maxUsed == -1.
+//
+// If g is a BNF grammar, it will still be a BNF grammar after _Reduce.
+//
+// Note: If the grammar cannot be reduced, no error is reported.  Comparing the
+// number of productions before and after calling _Reduce can reveal if any
+// reduction was performed.
+func (g Grammar) _Reduce(maxUsed int) (err error) {
+	for a, b := -1, len(g); a != b; a, b = b, len(g) {
+		for name := range g {
+			if !ast.IsExported(name) {
+				continue // lexical
+			}
+
+			if err = g._ReduceOne(name, maxUsed); err != nil {
+				return
+			}
+		}
+	}
+	return
+}
+
+// _ReduceOne attempts to inline production 'name' into all places where it is
+// used. For example, consider this grammar:
+//
+//	Start = "0" Abc Def "9".
+//	Def = "X" | Abc .
+//	Abc = "abc" .
+//
+// Performing _ReduceOne("Abc"), it becomes:
+//
+//	Start = "0" "abc" Def "9" .
+//	Def = "X" | "abc .
+//
+// Eligible productions are non self referential (`P = P | Q .`) non terminals
+// used in max maxUsed places. For maxUsed == 0 some sane default number is
+// used.  To always inline eligible productions, pass maxUsed == -1.
+
+// If g is a BNF grammar, it will still be a BNF grammar after _ReduceOne.
+//
+// Consider this EBNF grammar:
+//
+//	S = A B ( C | "5" ) .
+//	A = "1" .
+//	B = "2" | "3" .
+//	C = "4" .
+//
+// Performing _ReduceOne("B", -1) produces this EBNF grammar:
+//
+//	S = A ( "2" | "3" ) ( C | "5" ) .
+//	A = "1" .
+//	C = "4" .
+//
+// Consider this BNF grammar:
+//
+//	S = A B C .
+//	A = "1" .
+//	B = "2" | "3" .
+//	C = "4" .
+//
+// Performing _ReduceOne("B", -1) produces this BNF grammar:
+//
+//	S = A "2" C | A "3" C .
+//	A = "1" .
+//	C = "4" .
+//
+// Note: If the production cannot be inlined, no error is reported.  Comparing
+// the number of productions before and after calling _ReduceOne can reveal if
+// the inlining was performed.
+func (g Grammar) _ReduceOne(name string, maxUsed int) (err error) {
+	if !ast.IsExported(name) {
+		return // lexical
+	}
+
+	maxUsed = mathutil.Max(maxUsed, 1)
+	rep, err := g.Analyze()
+	if len(rep.UsedBy[name]) > maxUsed {
+		return
+	}
+
+	for user := range rep.UsedBy[name] {
+		if user == name {
+			return // Self referential.
+		}
+	}
+
+	panic(fmt.Errorf(".391 %q", name))
+}
+
 // String implements fmt.Stringer.
 func (g Grammar) String() string {
 	term, nterm := []string{}, []string{}
@@ -354,6 +510,8 @@ func (g Grammar) Verify(start string) error {
 
 // Report is returned from Analyze.
 type Report struct {
+	// The grammar uses no groups (`( expr )`), options (`[ expr ]`) or repetitions (`{ expr }`).
+	IsBNF bool
 	// Set of names of all lexical productions.
 	Lexical map[string]bool
 	// Set of all ebnf.Token.String values
@@ -382,17 +540,18 @@ type Report struct {
 
 // String implements fmt.Stringer.
 func (r *Report) String() string {
-	a := [6]string{}
-	a[0] = fmt.Sprintf("Lexical %s", str(r.Lexical))
-	a[1] = fmt.Sprintf("Literals %s", str(r.Literals))
-	a[2] = fmt.Sprintf("NonTerminals %s", str(r.NonTerminals))
+	a := [7]string{}
+	a[0] = fmt.Sprintf("IsBNF: %t", r.IsBNF)
+	a[1] = fmt.Sprintf("Lexical: %s", str(r.Lexical))
+	a[2] = fmt.Sprintf("Literals: %s", str(r.Literals))
+	a[3] = fmt.Sprintf("NonTerminals: %s", str(r.NonTerminals))
 	aa := []string{}
 	for v := range r.Ranges {
 		aa = append(aa, fmt.Sprintf("%q … %q", v.Begin, v.End))
 	}
 	sort.Strings(aa)
-	a[3] = fmt.Sprintf("Ranges %s", fmt.Sprintf("[%s]", strings.Join(aa, " ")))
-	a[4] = fmt.Sprintf("Tokens %s", str(r.Tokens))
+	a[4] = fmt.Sprintf("Ranges: %s", fmt.Sprintf("[%s]", strings.Join(aa, " ")))
+	a[5] = fmt.Sprintf("Tokens: %s", str(r.Tokens))
 	aa = []string{}
 	for v := range r.UsedBy {
 		aa = append(aa, v)
@@ -407,7 +566,7 @@ func (r *Report) String() string {
 		sort.Strings(aaa)
 		bb = append(bb, fmt.Sprintf("\t%q: [%s]", v, strings.Join(aaa, " ")))
 	}
-	a[5] = fmt.Sprintf("UsedBy:\n%s", strings.Join(bb, "\n"))
+	a[6] = fmt.Sprintf("UsedBy:\n%s", strings.Join(bb, "\n"))
 	return strings.Join(a[:], "\n") + "\n"
 }
 

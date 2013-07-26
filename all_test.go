@@ -81,6 +81,73 @@ func TestString(t *testing.T) {
 	}
 }
 
+func TestIsBNF(t *testing.T) {
+	table := []struct {
+		src string
+		exp bool
+	}{
+		{
+			`S = .`,
+			true,
+		},
+		{
+			`S = a .
+			a = .`,
+			true,
+		},
+		{
+			`S = a | b .
+			a = .
+			b = .`,
+			true,
+		},
+		{
+			`S = a | b [ c ] .
+			a = .
+			b = .
+			c = .`,
+			false,
+		},
+		{
+			`S = a | b ( c ) .
+			a = .
+			b = .
+			c = .`,
+			false,
+		},
+		{
+			`S = a | b { c } .
+			a = .
+			b = .
+			c = .`,
+			false,
+		},
+	}
+
+	for i, test := range table {
+		g, err := Parse(fmt.Sprintf("f%d", i), strings.NewReader(test.src))
+		if err != nil {
+			t.Error(i, err)
+			continue
+		}
+
+		if err = g.Verify("S"); err != nil {
+			t.Error(i, err)
+			continue
+		}
+
+		rep, err := g.Analyze()
+		if err != nil {
+			t.Error(i, err)
+			continue
+		}
+
+		if g, e := rep.IsBNF, test.exp; g != e {
+			t.Error(i)
+		}
+	}
+}
+
 func TestAnalyze(t *testing.T) {
 	for i, fname := range testfiles {
 		fname = filepath.Join(testdata, fname)
@@ -104,7 +171,7 @@ func TestAnalyze(t *testing.T) {
 			continue
 		}
 
-		r, err := g.Analyze("Start")
+		r, err := g.Analyze()
 		if err != nil {
 			t.Errorf("%d/%d %v", i, len(testfiles), err)
 			continue
@@ -228,5 +295,31 @@ func TestBNF1(t *testing.T) {
 		t.Log(i, fname)
 		t.Log(reps)
 		t.Log(g)
+	}
+}
+
+func TestClone(t *testing.T) {
+	for i, fname := range testfiles {
+		fname = filepath.Join(testdata, fname)
+		bsrc, err := ioutil.ReadFile(fname)
+		if err != nil {
+			t.Errorf("%d/%d %v", i, len(testfiles), err)
+			continue
+		}
+
+		src := bytes.NewBuffer(bsrc)
+		g, err := Parse(fname, src)
+		if err != nil {
+			t.Errorf("%d/%d %v", i, len(testfiles), err)
+			continue
+		}
+
+		g2 := g.Clone()
+		if g, e := g2.String(), g.String(); g != e {
+			t.Error(fname)
+			continue
+		}
+
+		t.Log(i, fname)
 	}
 }
