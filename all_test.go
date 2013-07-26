@@ -376,6 +376,12 @@ func TestReduceEBNF0(t *testing.T) {
 			`S =
 				| { "1" "2" }  .`,
 		},
+		{
+			`S = "A" B .
+			B = "B" { "C" } .`,
+			false,
+			`S = "A" "B" { "C" } .`,
+		},
 	}
 	for i, test := range table {
 		g, err := Parse(fmt.Sprintf("f%d", i), strings.NewReader(test.src))

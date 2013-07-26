@@ -111,18 +111,14 @@ IfStmt = "if" [ SimpleStmt ";" ] Expression Block [
 ImportSpec = [ "." | PackageName ] string_lit .
 Label = identifier .
 LiteralValue = "{" [
-		 (
-			 Element { "," Element }
-		  ) [ "," ]
+		 Element { "," Element } [ "," ]
 	  ] "}" .
 MapType = "map" "[" Type "]" ElementType .
 MethodName = identifier .
 PackageName = identifier .
 ParameterDecl = [ IdentifierList ] [ "..." ] Type .
 Parameters = "(" [
-		 (
-			 ParameterDecl { "," ParameterDecl }
-		  ) [ "," ]
+		 ParameterDecl { "," ParameterDecl } [ "," ]
 	  ] ")" .
 PrimaryExpr = int_lit
 	| float_lit
@@ -149,19 +145,11 @@ PrimaryExpr = int_lit
 			| ArgumentList 
 		  ) [ "," ]
 	  ] ")"
-	| PrimaryExpr ( "." identifier )
-	| PrimaryExpr (
-		 "[" Expression "]"
-	  )
-	| PrimaryExpr (
-		 "[" [ Expression ] ":" [ Expression ] "]"
-	  )
-	| PrimaryExpr (
-		 "." "(" Type ")"
-	  )
-	| PrimaryExpr (
-		 "(" [ ArgumentList [ "," ] ] ")"
-	  )  .
+	| PrimaryExpr "." identifier
+	| PrimaryExpr "[" Expression "]"
+	| PrimaryExpr "[" [ Expression ] ":" [ Expression ] "]"
+	| PrimaryExpr "." "(" Type ")"
+	| PrimaryExpr "(" [ ArgumentList [ "," ] ] ")"  .
 QualifiedIdent = PackageName "." identifier .
 ReceiverType = TypeName
 	| "(" "*" TypeName ")"
@@ -175,20 +163,16 @@ SimpleStmt =
 	| ExpressionList assign_op ExpressionList
 	| IdentifierList ":=" ExpressionList  .
 SliceType = "[" "]" ElementType .
-Start = ( "package" PackageName ) ";" {
-		 (
-			 "import" (
-				  ImportSpec
-				| "(" { ImportSpec ";" } ")" 
-			  )
+Start = "package" PackageName ";" {
+		 "import" (
+			  ImportSpec
+			| "(" { ImportSpec ";" } ")" 
 		  ) ";"
 	  } {
 		 (
 			  Declaration
 			| "func" identifier ( Function | Signature )
-			| "func" (
-				 "(" [ identifier ] [ "*" ] identifier ")"
-			  ) MethodName ( Function | Signature ) 
+			| "func" "(" [ identifier ] [ "*" ] identifier ")" MethodName ( Function | Signature ) 
 		  ) ";"
 	  } .
 Statement = Declaration
@@ -208,13 +192,9 @@ Statement = Declaration
 			| "default" 
 		  ) ":" StatementList
 	  } "}"
-	| "switch" [ SimpleStmt ";" ] (
-		 [ identifier ":=" ] PrimaryExpr "." "(" "type" ")"
-	  ) "{" {
+	| "switch" [ SimpleStmt ";" ] [ identifier ":=" ] PrimaryExpr "." "(" "type" ")" "{" {
 		 (
-			  "case" (
-				 Type { "," Type }
-			  )
+			  "case" Type { "," Type }
 			| "default" 
 		  ) ":" StatementList
 	  } "}"
@@ -242,11 +222,9 @@ Statement = Declaration
 StatementList = { Statement ";" } .
 StructType = "struct" "{" {
 		 (
-			 (
-				  IdentifierList Type
-				| [ "*" ] TypeName 
-			  ) [ string_lit ]
-		  ) ";"
+			  IdentifierList Type
+			| [ "*" ] TypeName 
+		  ) [ string_lit ] ";"
 	  } "}" .
 Type = TypeName
 	| ArrayType

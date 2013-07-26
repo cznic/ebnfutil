@@ -314,9 +314,41 @@ func CloneExpression(expr ebnf.Expression) ebnf.Expression {
 		}
 		return y
 	case ebnf.Sequence:
+		for stable := false; !stable; {
+			stable = true
+		loop2:
+			for i, v := range x {
+				if a, ok := v.(*ebnf.Group); ok {
+					var aa ebnf.Expression
+					for {
+						aa = CloneExpression(a.Body)
+						if aaa, ok := aa.(*ebnf.Group); !ok {
+							break
+						} else {
+							a = aaa
+						}
+					}
+					switch a := aa.(type) {
+					case ebnf.Sequence:
+						y := ebnf.Sequence{}
+						if i > 0 {
+							y = append(y, x[:i]...)
+						}
+						y = append(y, a...)
+						y = append(y, x[i+1:]...)
+						x = y
+						stable = false
+						break loop2
+					}
+
+				}
+			}
+		}
 		y := ebnf.Sequence{}
 		for _, v := range x {
-			y = append(y, CloneExpression(v))
+			if v != nil {
+				y = append(y, CloneExpression(v))
+			}
 		}
 		return y
 	case *ebnf.Group:
