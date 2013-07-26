@@ -19,7 +19,6 @@ import (
 	"strings"
 
 	"code.google.com/p/go.exp/ebnf"
-	"github.com/cznic/mathutil"
 	"github.com/cznic/strutil"
 )
 
@@ -103,6 +102,7 @@ func (g Grammar) Analyze() (r *Report, err error) {
 			f(name, x.Body)
 		case *ebnf.Name:
 			name2 := x.String
+			r.Used[name2]++
 			r.UsedBy[name2][name] = true
 			if ast.IsExported(name) && !ast.IsExported(name2) {
 				r.Tokens[name2] = true
@@ -124,6 +124,7 @@ func (g Grammar) Analyze() (r *Report, err error) {
 		NonTerminals: map[string]bool{},
 		Ranges:       map[struct{ Begin, End string }]bool{},
 		Tokens:       map[string]bool{},
+		Used:         map[string]int{},
 		UsedBy:       map[string]map[string]bool{},
 	}
 	for name := range g {
@@ -257,50 +258,99 @@ func (g Grammar) BNF(start string, nameInventor func(name string) string) (r Gra
 	return
 }
 
-// Clone returns a clone of g. Positions are ignored.
+// Clone returns a normalized clone of g. Positions are ignored.
 func (g Grammar) Clone() (r Grammar) {
-	var f func(expr ebnf.Expression) ebnf.Expression
-	f = func(expr ebnf.Expression) ebnf.Expression {
-		switch x := expr.(type) {
-		case nil:
-			return nil
-		case ebnf.Alternative:
-			y := ebnf.Alternative{}
-			for _, v := range x {
-				y = append(y, f(v))
-			}
-			return y
-		case ebnf.Sequence:
-			y := ebnf.Sequence{}
-			for _, v := range x {
-				y = append(y, f(v))
-			}
-			return y
-		case *ebnf.Group:
-			return &ebnf.Group{Body: f(x.Body)}
-		case *ebnf.Option:
-			return &ebnf.Option{Body: f(x.Body)}
-		case *ebnf.Repetition:
-			return &ebnf.Repetition{Body: f(x.Body)}
-		case *ebnf.Name:
-			return &ebnf.Name{String: x.String}
-		case *ebnf.Token:
-			return &ebnf.Token{String: x.String}
-		case *ebnf.Range:
-			return &ebnf.Range{
-				Begin: &ebnf.Token{String: x.Begin.String},
-				End:   &ebnf.Token{String: x.End.String},
-			}
-		default:
-			panic(fmt.Sprintf("internal error %T(%v)", x, x))
-		}
-	}
-
 	r = Grammar{}
 	for name, prod := range g {
-		r[name] = &ebnf.Production{Name: &ebnf.Name{String: name}, Expr: f(prod.Expr)}
+		r[name] = CloneProduction(prod)
 	}
 	return
+}
+
+// CloneExpression returns a normalized clone of expr. Positions are ignored.
+func CloneExpression(expr ebnf.Expression) ebnf.Expression {
+	switch x := expr.(type) {
+	case nil:
+		return nil
+	case ebnf.Alternative:
+		for stable := false; !stable; {
+			stable = true
+			for i, v := range x {
+				if a, ok := v.(*ebnf.Group); ok {
+					aa := CloneExpression(a.Body)
+					if a, ok := aa.(ebnf.Alternative); ok {
+						y := ebnf.Alternative{}
+						if i > 0 {
+							y = append(y, x[:i]...)
+						}
+						y = append(y, a...)
+						y = append(y, x[i+1:]...)
+						x = y
+						stable = false
+						break
+					}
+				}
+			}
+		}
+		y := ebnf.Alternative{}
+		for _, v := range x {
+			y = append(y, CloneExpression(v))
+		}
+		return y
+	case ebnf.Sequence:
+		y := ebnf.Sequence{}
+		for _, v := range x {
+			y = append(y, CloneExpression(v))
+		}
+		return y
+	case *ebnf.Group:
+		switch xx := x.Body.(type) {
+		case *ebnf.Group:
+			return &ebnf.Group{Body: CloneExpression(xx.Body)}
+		default:
+			switch {
+			case prodLen(x) == 1:
+				return CloneExpression(x.Body)
+			default:
+				switch x.Body.(type) {
+				case *ebnf.Group, *ebnf.Option, *ebnf.Repetition:
+					return CloneExpression(x.Body)
+				default:
+					return &ebnf.Group{Body: CloneExpression(x.Body)}
+				}
+			}
+		}
+	case *ebnf.Option:
+		switch xx := x.Body.(type) {
+		case *ebnf.Group:
+			return &ebnf.Option{Body: CloneExpression(xx.Body)}
+		default:
+			return &ebnf.Option{Body: CloneExpression(x.Body)}
+		}
+	case *ebnf.Repetition:
+		switch xx := x.Body.(type) {
+		case *ebnf.Group:
+			return &ebnf.Repetition{Body: CloneExpression(xx.Body)}
+		default:
+			return &ebnf.Repetition{Body: CloneExpression(x.Body)}
+		}
+	case *ebnf.Name:
+		return &ebnf.Name{String: x.String}
+	case *ebnf.Token:
+		return &ebnf.Token{String: x.String}
+	case *ebnf.Range:
+		return &ebnf.Range{
+			Begin: &ebnf.Token{String: x.Begin.String},
+			End:   &ebnf.Token{String: x.End.String},
+		}
+	default:
+		panic(fmt.Sprintf("internal error %T(%v)", x, x))
+	}
+}
+
+// CloneProduction returns a normalized clone of prod. Positions are ignored.
+func CloneProduction(prod *ebnf.Production) *ebnf.Production {
+	return &ebnf.Production{Name: &ebnf.Name{String: prod.Name.String}, Expr: CloneExpression(prod.Expr)}
 }
 
 // _Reduce attempts to remove productions from g by inlining eligible
@@ -314,22 +364,23 @@ func (g Grammar) Clone() (r Grammar) {
 //	Start = "0" "abc" "9" .
 //
 // Eligible productions are non self referential (`P = P | Q .`) non terminals
-// used in max maxUsed places. For maxUsed == 0 some sane default number is
-// used.  To always inline eligible productions, pass maxUsed == -1.
+// used only once (or unlimited times when all == true).
 //
 // If g is a BNF grammar, it will still be a BNF grammar after _Reduce.
 //
 // Note: If the grammar cannot be reduced, no error is reported.  Comparing the
 // number of productions before and after calling _Reduce can reveal if any
 // reduction was performed.
-func (g Grammar) _Reduce(maxUsed int) (err error) {
+//
+// 'start' is the name of the start production.
+func (g Grammar) _Reduce(start string, all bool) (err error) {
 	for a, b := -1, len(g); a != b; a, b = b, len(g) {
 		for name := range g {
-			if !ast.IsExported(name) {
+			if name == start || !ast.IsExported(name) {
 				continue // lexical
 			}
 
-			if err = g._ReduceOne(name, maxUsed); err != nil {
+			if err = g._ReduceOne(name, all); err != nil {
 				return
 			}
 		}
@@ -350,9 +401,8 @@ func (g Grammar) _Reduce(maxUsed int) (err error) {
 //	Def = "X" | "abc .
 //
 // Eligible productions are non self referential (`P = P | Q .`) non terminals
-// used in max maxUsed places. For maxUsed == 0 some sane default number is
-// used.  To always inline eligible productions, pass maxUsed == -1.
-
+// used only once (or unlimited times when all == true).
+//
 // If g is a BNF grammar, it will still be a BNF grammar after _ReduceOne.
 //
 // Consider this EBNF grammar:
@@ -384,14 +434,16 @@ func (g Grammar) _Reduce(maxUsed int) (err error) {
 // Note: If the production cannot be inlined, no error is reported.  Comparing
 // the number of productions before and after calling _ReduceOne can reveal if
 // the inlining was performed.
-func (g Grammar) _ReduceOne(name string, maxUsed int) (err error) {
+//
+// Note: Invoking _ReduceOne for the start production will render the grammar
+// unusable.
+func (g Grammar) _ReduceOne(name string, all bool) (err error) {
 	if !ast.IsExported(name) {
 		return // lexical
 	}
 
-	maxUsed = mathutil.Max(maxUsed, 1)
 	rep, err := g.Analyze()
-	if len(rep.UsedBy[name]) > maxUsed {
+	if !all && rep.Used[name] > 1 {
 		return
 	}
 
@@ -401,7 +453,57 @@ func (g Grammar) _ReduceOne(name string, maxUsed int) (err error) {
 		}
 	}
 
-	panic(fmt.Errorf(".391 %q", name))
+	switch rep.IsBNF {
+	case true:
+		g.reduceBNF(name, rep.UsedBy[name])
+	default:
+		g.reduceEBNF(name, rep.UsedBy[name])
+	}
+	return
+}
+
+func (g Grammar) reduceBNF(what string, where map[string]bool) {
+	panic(fmt.Errorf(".420 %q", what))
+}
+
+func (g Grammar) reduceEBNF(what string, where map[string]bool) {
+	for name := range where {
+		var f func(*ebnf.Expression)
+		f = func(expr *ebnf.Expression) {
+			switch x := (*expr).(type) {
+			case nil:
+				// nop
+			case ebnf.Alternative:
+				for i := range x {
+					f(&x[i])
+				}
+			case ebnf.Sequence:
+				for i := range x {
+					f(&x[i])
+				}
+			case *ebnf.Group:
+				f(&x.Body)
+			case *ebnf.Option:
+				f(&x.Body)
+			case *ebnf.Repetition:
+				f(&x.Body)
+			case *ebnf.Name:
+				if x.String != what {
+					break
+				}
+
+				*expr = &ebnf.Group{Body: CloneExpression(g[x.String].Expr)}
+			case *ebnf.Token:
+				// nop
+			default:
+				panic(fmt.Sprintf("internal error %T(%v)", x, x))
+			}
+		}
+		prod := g[name]
+		f(&prod.Expr)
+		prod.Expr = CloneExpression(prod.Expr) // normalize
+	}
+	delete(g, what)
 }
 
 // String implements fmt.Stringer.
@@ -512,19 +614,21 @@ func (g Grammar) Verify(start string) error {
 type Report struct {
 	// The grammar uses no groups (`( expr )`), options (`[ expr ]`) or repetitions (`{ expr }`).
 	IsBNF bool
-	// Set of names of all lexical productions.
+	// Set of lexical productions names.
 	Lexical map[string]bool
 	// Set of all ebnf.Token.String values
 	Literals map[string]bool
-	// Set of names of all non terminal productions.
+	// Set of all non terminal productions names.
 	NonTerminals map[string]bool
 	// Set of all ebnf.Range.{Begin,End} pairs.
 	Ranges map[struct{ Begin, End string }]bool
 	// Set of all lexical production names referenced from within a
 	// non-terminal production.
 	Tokens map[string]bool
-	// UsedBy is map of production names to a set of production names which
-	// refers to them, ie. a cross-reference. For example a grammar:
+	// Used maps a production name to the count of its references.
+	Used map[string]int
+	// UsedBy maps a production name to its referencing production names
+	// set ie. a cross-reference. For example a grammar:
 	//
 	//        Start = number | Start number .
 	//        number = "0" … "9" .
@@ -540,24 +644,29 @@ type Report struct {
 
 // String implements fmt.Stringer.
 func (r *Report) String() string {
-	a := [7]string{}
-	a[0] = fmt.Sprintf("IsBNF: %t", r.IsBNF)
-	a[1] = fmt.Sprintf("Lexical: %s", str(r.Lexical))
-	a[2] = fmt.Sprintf("Literals: %s", str(r.Literals))
-	a[3] = fmt.Sprintf("NonTerminals: %s", str(r.NonTerminals))
+	a := []string{}
+	a = append(a, fmt.Sprintf("IsBNF: %t", r.IsBNF))
+	a = append(a, fmt.Sprintf("Lexical: %s", str(r.Lexical)))
+	a = append(a, fmt.Sprintf("Literals: %s", str(r.Literals)))
+	a = append(a, fmt.Sprintf("NonTerminals: %s", str(r.NonTerminals)))
 	aa := []string{}
 	for v := range r.Ranges {
 		aa = append(aa, fmt.Sprintf("%q … %q", v.Begin, v.End))
 	}
 	sort.Strings(aa)
-	a[4] = fmt.Sprintf("Ranges: %s", fmt.Sprintf("[%s]", strings.Join(aa, " ")))
-	a[5] = fmt.Sprintf("Tokens: %s", str(r.Tokens))
+	a = append(a, fmt.Sprintf("Ranges: %s", fmt.Sprintf("[%s]", strings.Join(aa, " "))))
+	a = append(a, fmt.Sprintf("Tokens: %s", str(r.Tokens)))
 	aa = []string{}
 	for v := range r.UsedBy {
 		aa = append(aa, v)
 	}
-	sort.Strings(aa)
 	bb := []string{}
+	for name, count := range r.Used {
+		bb = append(bb, fmt.Sprintf("\t%q: %d", name, count))
+	}
+	sort.Strings(bb)
+	a = append(a, fmt.Sprintf("Used:\n%s", strings.Join(bb, "\n")))
+	bb = []string{}
 	for _, v := range aa {
 		aaa := []string{}
 		for vv := range r.UsedBy[v] {
@@ -566,7 +675,8 @@ func (r *Report) String() string {
 		sort.Strings(aaa)
 		bb = append(bb, fmt.Sprintf("\t%q: [%s]", v, strings.Join(aaa, " ")))
 	}
-	a[6] = fmt.Sprintf("UsedBy:\n%s", strings.Join(bb, "\n"))
+	sort.Strings(bb)
+	a = append(a, fmt.Sprintf("UsedBy:\n%s", strings.Join(bb, "\n")))
 	return strings.Join(a[:], "\n") + "\n"
 }
 

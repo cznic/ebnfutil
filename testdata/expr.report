@@ -4,6 +4,23 @@ Literals: ["!" "%" "&" "&^" "(" ")" "*" "+" "," "-" "." "/" "<<" ">>" "^" "false
 NonTerminals: ["Expression" "ExpressionList" "Factor" "Literal" "Operand" "QualifiedIdent" "Start" "Term"]
 Ranges: []
 Tokens: ["andnot" "boolean" "float" "identifier" "imaginary" "integer" "lsh" "rsh" "str"]
+Used:
+	"Expression": 4
+	"ExpressionList": 1
+	"Factor": 2
+	"Literal": 1
+	"Operand": 1
+	"QualifiedIdent": 2
+	"Term": 2
+	"andnot": 1
+	"boolean": 1
+	"float": 1
+	"identifier": 2
+	"imaginary": 1
+	"integer": 1
+	"lsh": 1
+	"rsh": 1
+	"str": 1
 UsedBy:
 	"Expression": ["ExpressionList" "Operand" "Start"]
 	"ExpressionList": ["Operand"]

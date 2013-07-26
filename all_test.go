@@ -285,7 +285,7 @@ func TestBNF1(t *testing.T) {
 		}
 
 		var i int
-		g, reps, err := g.BNF("Start", nil)
+		g, _, err = g.BNF("Start", nil)
 
 		if err != nil {
 			t.Error(i, err)
@@ -293,8 +293,6 @@ func TestBNF1(t *testing.T) {
 		}
 
 		t.Log(i, fname)
-		t.Log(reps)
-		t.Log(g)
 	}
 }
 
@@ -316,7 +314,105 @@ func TestClone(t *testing.T) {
 
 		g2 := g.Clone()
 		if g, e := g2.String(), g.String(); g != e {
+			t.Log(g)
+			t.Log(e)
 			t.Error(fname)
+			continue
+		}
+
+		t.Log(i, fname)
+	}
+}
+
+func _TestReduceEBNF0(t *testing.T) { //TODO
+	table := []struct {
+		src string
+		all bool
+		exp string
+	}{
+		{
+			`S = R | "0"  | "1" .
+			R = "A" | "Z" .
+			Ebnf = ( "E" | "F" ) .`,
+			false,
+			`S = "A"
+				| "Z"
+				| "0"
+				| "1"  .`,
+		},
+		{
+			`S = "0" | R | "1" .
+			R = "A" | "Z" .
+			Ebnf = ( "E" | "F" ) .`,
+			false,
+			`S = "0"
+				| "A"
+				| "Z"
+				| "1"  .`,
+		},
+		{
+			`S = "0" | "1" | R .
+			R = "A" | "Z" .
+			Ebnf = ( "E" | "F" ) .`,
+			false,
+			`S = "0"
+				| "1"
+				| "A"
+				| "Z"  .`,
+		},
+	}
+	for i, test := range table {
+		g, err := Parse(fmt.Sprintf("f%d", i), strings.NewReader(test.src))
+		if err != nil {
+			t.Error(i, err)
+			continue
+		}
+
+		g2 := g.Clone()
+		if err := g2._Reduce("S", test.all); err != nil {
+			t.Error(i, err)
+			continue
+		}
+
+		if g, e := g2.String(), test.exp; trimx(g) != trimx(e) {
+			t.Errorf("----\ng:\n%s\n----\ne:\n%s", g, e)
+		}
+
+	}
+}
+
+func _TestReduceEBNF(t *testing.T) { //TODO
+	for i, fname := range testfiles {
+
+		fname = filepath.Join(testdata, fname)
+		bsrc, err := ioutil.ReadFile(fname)
+		if err != nil {
+			t.Errorf("%d/%d %v", i, len(testfiles), err)
+			continue
+		}
+
+		src := bytes.NewBuffer(bsrc)
+		g, err := Parse(fname, src)
+		if err != nil {
+			t.Errorf("%d/%d %v", i, len(testfiles), err)
+			continue
+		}
+
+		g2 := g.Clone()
+		if err = g2._Reduce("Start" /*TODOfalse*/, true); err != nil {
+			t.Error(i, err)
+			continue
+		}
+
+		sname := fname + ".reduced"
+		ref, err := ioutil.ReadFile(sname)
+		if err != nil {
+			t.Errorf("%d/%d %v", i, len(testfiles), err)
+			continue
+		}
+
+		if g, e := g2.String(), string(ref); g != e {
+			t.Errorf("%d/%d\n----\ngot:\n%s\n----\nexp:\n%s", i, len(testfiles), g, e)
 			continue
 		}
 
