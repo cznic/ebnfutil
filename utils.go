@@ -275,10 +275,20 @@ func CloneExpression(expr ebnf.Expression) ebnf.Expression {
 	case ebnf.Alternative:
 		for stable := false; !stable; {
 			stable = true
+		loop:
 			for i, v := range x {
 				if a, ok := v.(*ebnf.Group); ok {
-					aa := CloneExpression(a.Body)
-					if a, ok := aa.(ebnf.Alternative); ok {
+					var aa ebnf.Expression
+					for {
+						aa = CloneExpression(a.Body)
+						if aaa, ok := aa.(*ebnf.Group); !ok {
+							break
+						} else {
+							a = aaa
+						}
+					}
+					switch a := aa.(type) {
+					case ebnf.Alternative:
 						y := ebnf.Alternative{}
 						if i > 0 {
 							y = append(y, x[:i]...)
@@ -287,8 +297,14 @@ func CloneExpression(expr ebnf.Expression) ebnf.Expression {
 						y = append(y, x[i+1:]...)
 						x = y
 						stable = false
-						break
+						break loop
+					case ebnf.Sequence:
+						x[i] = a
+						continue
+					case nil:
+						x[i] = nil
 					}
+
 				}
 			}
 		}
@@ -306,7 +322,7 @@ func CloneExpression(expr ebnf.Expression) ebnf.Expression {
 	case *ebnf.Group:
 		switch xx := x.Body.(type) {
 		case *ebnf.Group:
-			return &ebnf.Group{Body: CloneExpression(xx.Body)}
+			return CloneExpression(xx)
 		default:
 			switch {
 			case prodLen(x) == 1:
@@ -463,7 +479,7 @@ func (g Grammar) _ReduceOne(name string, all bool) (err error) {
 }
 
 func (g Grammar) reduceBNF(what string, where map[string]bool) {
-	panic(fmt.Errorf(".420 %q", what))
+	panic(fmt.Errorf(".482 %q", what)) //TODO
 }
 
 func (g Grammar) reduceEBNF(what string, where map[string]bool) {

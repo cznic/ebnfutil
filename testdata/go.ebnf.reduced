@@ -1,0 +1,276 @@
+add_op = "+"
+	| "-"
+	| "|"
+	| "^"  .
+assign_op = [ add_op | mul_op ] "=" .
+big_u_value = "\\" "U" hex_digit hex_digit hex_digit hex_digit hex_digit hex_digit hex_digit hex_digit .
+binary_op = "||"
+	| "&&"
+	| rel_op
+	| add_op
+	| mul_op  .
+byte_value = octal_byte_value | hex_byte_value .
+decimal_digit = "0" … "9" .
+decimal_lit = "1" … "9" { decimal_digit } .
+decimals = decimal_digit { decimal_digit } .
+escaped_char = "\\" (
+		  "a"
+		| "b"
+		| "f"
+		| "n"
+		| "r"
+		| "t"
+		| "v"
+		| "\\"
+		| "'"
+		| "\"" 
+	  ) .
+exponent = ( "e" | "E" ) [ "+" | "-" ] decimals .
+float_lit = decimals "." [ decimals ] [ exponent ]
+	| decimals exponent
+	| "." decimals [ exponent ]  .
+hex_byte_value = "\\" "x" hex_digit hex_digit .
+hex_digit = "0" … "9"
+	| "A" … "F"
+	| "a" … "f"  .
+hex_lit = "0" ( "x" | "X" ) hex_digit { hex_digit } .
+identifier = letter { letter | unicode_digit } .
+imaginary_lit = ( decimals | float_lit ) "i" .
+int_lit = decimal_lit
+	| octal_lit
+	| hex_lit  .
+interpreted_string_lit = "\"" { unicode_value | byte_value } "\"" .
+letter = unicode_letter | "_" .
+little_u_value = "\\" "u" hex_digit hex_digit hex_digit hex_digit .
+mul_op = "*"
+	| "/"
+	| "%"
+	| "<<"
+	| ">>"
+	| "&"
+	| "&^"  .
+newline = .
+octal_byte_value = "\\" octal_digit octal_digit octal_digit .
+octal_digit = "0" … "7" .
+octal_lit = "0" { octal_digit } .
+raw_string_lit = "`" { unicode_char | newline } "`" .
+rel_op = "=="
+	| "!="
+	| "<"
+	| "<="
+	| ">"
+	| ">="  .
+rune_lit = "'" ( unicode_value | byte_value ) "'" .
+string_lit = raw_string_lit | interpreted_string_lit .
+unary_op = "+"
+	| "-"
+	| "!"
+	| "^"
+	| "*"
+	| "&"
+	| "<-"  .
+unicode_char = .
+unicode_digit = .
+unicode_letter = .
+unicode_value = unicode_char
+	| little_u_value
+	| big_u_value
+	| escaped_char  .
+
+ArgumentList = ExpressionList [ "..." ] .
+ArrayType = "[" Expression "]" ElementType .
+Block = "{" StatementList "}" .
+Condition = Expression .
+ConstSpec = IdentifierList [
+		 [ Type ] "=" ExpressionList
+	  ] .
+Declaration = "const" (
+		  ConstSpec
+		| "(" { ConstSpec ";" } ")" 
+	  )
+	| "type" (
+		  TypeSpec
+		| "(" { TypeSpec ";" } ")" 
+	  )
+	| "var" (
+		  VarSpec
+		| "(" { VarSpec ";" } ")" 
+	  )  .
+Element = [
+		 ( identifier | Expression ) ":"
+	  ] ( Expression | LiteralValue ) .
+ElementType = Type .
+Expression = UnaryExpr
+	| Expression binary_op UnaryExpr  .
+ExpressionList = Expression { "," Expression } .
+Function = Signature Block .
+IdentifierList = identifier { "," identifier } .
+IfStmt = "if" [ SimpleStmt ";" ] Expression Block [
+		 "else" ( IfStmt | Block )
+	  ] .
+ImportSpec = [ "." | PackageName ] string_lit .
+Label = identifier .
+LiteralValue = "{" [
+		 (
+			 Element { "," Element }
+		  ) [ "," ]
+	  ] "}" .
+MapType = "map" "[" Type "]" ElementType .
+MethodName = identifier .
+PackageName = identifier .
+ParameterDecl = [ IdentifierList ] [ "..." ] Type .
+Parameters = "(" [
+		 (
+			 ParameterDecl { "," ParameterDecl }
+		  ) [ "," ]
+	  ] ")" .
+PrimaryExpr = int_lit
+	| float_lit
+	| imaginary_lit
+	| rune_lit
+	| string_lit
+	| (
+		  StructType
+		| ArrayType
+		| "[" "..." "]" ElementType
+		| SliceType
+		| MapType
+		| TypeName 
+	  ) LiteralValue
+	| "func" Function
+	| identifier
+	| QualifiedIdent
+	| ReceiverType "." MethodName
+	| "(" Expression ")"
+	| Type "(" Expression [ "," ] ")"
+	| identifier "(" [
+		 (
+			  Type [ "," ArgumentList ]
+			| ArgumentList 
+		  ) [ "," ]
+	  ] ")"
+	| PrimaryExpr ( "." identifier )
+	| PrimaryExpr (
+		 "[" Expression "]"
+	  )
+	| PrimaryExpr (
+		 "[" [ Expression ] ":" [ Expression ] "]"
+	  )
+	| PrimaryExpr (
+		 "." "(" Type ")"
+	  )
+	| PrimaryExpr (
+		 "(" [ ArgumentList [ "," ] ] ")"
+	  )  .
+QualifiedIdent = PackageName "." identifier .
+ReceiverType = TypeName
+	| "(" "*" TypeName ")"
+	| "(" ReceiverType ")"  .
+SendStmt = Expression "<-" Expression .
+Signature = Parameters [ Parameters | Type ] .
+SimpleStmt =
+	| Expression
+	| SendStmt
+	| Expression ( "++" | "--" )
+	| ExpressionList assign_op ExpressionList
+	| IdentifierList ":=" ExpressionList  .
+SliceType = "[" "]" ElementType .
+Start = ( "package" PackageName ) ";" {
+		 (
+			 "import" (
+				  ImportSpec
+				| "(" { ImportSpec ";" } ")" 
+			  )
+		  ) ";"
+	  } {
+		 (
+			  Declaration
+			| "func" identifier ( Function | Signature )
+			| "func" (
+				 "(" [ identifier ] [ "*" ] identifier ")"
+			  ) MethodName ( Function | Signature ) 
+		  ) ";"
+	  } .
+Statement = Declaration
+	| Label ":" Statement
+	| SimpleStmt
+	| "go" Expression
+	| "return" [ ExpressionList ]
+	| "break" [ Label ]
+	| "continue" [ Label ]
+	| "goto" Label
+	| "fallthrough"
+	| Block
+	| IfStmt
+	| "switch" [ SimpleStmt ";" ] [ Expression ] "{" {
+		 (
+			  "case" ExpressionList
+			| "default" 
+		  ) ":" StatementList
+	  } "}"
+	| "switch" [ SimpleStmt ";" ] (
+		 [ identifier ":=" ] PrimaryExpr "." "(" "type" ")"
+	  ) "{" {
+		 (
+			  "case" (
+				 Type { "," Type }
+			  )
+			| "default" 
+		  ) ":" StatementList
+	  } "}"
+	| "select" "{" {
+		 (
+			  "case" (
+				  SendStmt
+				| [
+					  ExpressionList "="
+					| IdentifierList ":=" 
+				  ] Expression 
+			  )
+			| "default" 
+		  ) ":" StatementList
+	  } "}"
+	| "for" [
+		  Condition
+		| [ SimpleStmt ] ";" [ Condition ] ";" [ SimpleStmt ]
+		| (
+			  ExpressionList "="
+			| IdentifierList ":=" 
+		  ) "range" Expression 
+	  ] Block
+	| "defer" Expression  .
+StatementList = { Statement ";" } .
+StructType = "struct" "{" {
+		 (
+			 (
+				  IdentifierList Type
+				| [ "*" ] TypeName 
+			  ) [ string_lit ]
+		  ) ";"
+	  } "}" .
+Type = TypeName
+	| ArrayType
+	| StructType
+	| "*" Type
+	| "func" Signature
+	| "interface" "{" {
+		 (
+			  MethodName Signature
+			| TypeName 
+		  ) ";"
+	  } "}"
+	| SliceType
+	| MapType
+	| (
+		  "chan" [ "<-" ]
+		| "<-" "chan" 
+	  ) ElementType
+	| "(" Type ")"  .
+TypeName = identifier | QualifiedIdent .
+TypeSpec = identifier Type .
+UnaryExpr = PrimaryExpr
+	| unary_op UnaryExpr  .
+VarSpec = IdentifierList (
+		  Type [ "=" ExpressionList ]
+		| "=" ExpressionList 
+	  ) .

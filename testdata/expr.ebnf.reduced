@@ -1,0 +1,48 @@
+andnot = "&^" .
+boolean = "true" | "false" .
+float = .
+identifier = .
+imaginary = .
+integer = .
+lsh = "<<" .
+rsh = ">>" .
+str = .
+
+Expression = Term {
+		 (
+			  "^"
+			| "|"
+			| "-"
+			| "+" 
+		  ) Term
+	  } .
+Factor = [
+		  "^"
+		| "!"
+		| "-"
+		| "+" 
+	  ] (
+		  boolean
+		| float
+		| QualifiedIdent
+		| imaginary
+		| integer
+		| str
+		| QualifiedIdent "(" [
+			 Expression { "," Expression }
+		  ] ")"
+		| "(" Expression ")" 
+	  ) .
+QualifiedIdent = identifier [ "." identifier ] .
+Start = Expression .
+Term = Factor {
+		 (
+			  andnot
+			| "&"
+			| lsh
+			| rsh
+			| "%"
+			| "/"
+			| "*" 
+		  ) Factor
+	  } .

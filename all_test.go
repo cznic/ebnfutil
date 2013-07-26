@@ -324,7 +324,7 @@ func TestClone(t *testing.T) {
 	}
 }
 
-func _TestReduceEBNF0(t *testing.T) { //TODO
+func TestReduceEBNF0(t *testing.T) {
 	table := []struct {
 		src string
 		all bool
@@ -360,6 +360,22 @@ func _TestReduceEBNF0(t *testing.T) { //TODO
 				| "A"
 				| "Z"  .`,
 		},
+		{
+			`S = "0" | One | "2" .
+			One = ( "f" "function" ) .
+			Ebnf = ( "E" | "F" ) .`,
+			false,
+			`S = "0"
+				| "f" "function"
+				| "2"  .`,
+		},
+		{
+			`Empty = .
+			S = Empty | { "1" "2" } .`,
+			false,
+			`S =
+				| { "1" "2" }  .`,
+		},
 	}
 	for i, test := range table {
 		g, err := Parse(fmt.Sprintf("f%d", i), strings.NewReader(test.src))
@@ -381,7 +397,7 @@ func _TestReduceEBNF0(t *testing.T) { //TODO
 	}
 }
 
-func _TestReduceEBNF(t *testing.T) { //TODO
+func TestReduceEBNF(t *testing.T) {
 	for i, fname := range testfiles {
 
 		fname = filepath.Join(testdata, fname)
@@ -399,7 +415,7 @@ func _TestReduceEBNF(t *testing.T) { //TODO
 		}
 
 		g2 := g.Clone()
-		if err = g2._Reduce("Start" /*TODOfalse*/, true); err != nil {
+		if err = g2._Reduce("Start", false); err != nil {
 			t.Error(i, err)
 			continue
 		}
