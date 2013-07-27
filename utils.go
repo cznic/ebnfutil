@@ -37,6 +37,140 @@ var (
 	repR   = map[bool]string{false: " }", true: "%u\n  }"}
 )
 
+// NormalizeExpression returns a normalized clone of expr. Positions are ignored.
+func NormalizeExpression(expr ebnf.Expression) ebnf.Expression {
+	switch x := expr.(type) {
+	case nil:
+		return nil
+	case ebnf.Alternative:
+		for stable := false; !stable; {
+			stable = true
+		loop:
+			for i, v := range x {
+				if a, ok := v.(*ebnf.Group); ok {
+					var aa ebnf.Expression
+					for {
+						aa = NormalizeExpression(a.Body)
+						if aaa, ok := aa.(*ebnf.Group); !ok {
+							break
+						} else {
+							a = aaa
+						}
+					}
+					switch a := aa.(type) {
+					case ebnf.Alternative:
+						y := ebnf.Alternative{}
+						if i > 0 {
+							y = append(y, x[:i]...)
+						}
+						y = append(y, a...)
+						y = append(y, x[i+1:]...)
+						x = y
+						stable = false
+						break loop
+					case ebnf.Sequence:
+						x[i] = a
+						continue
+					case nil:
+						x[i] = nil
+					}
+
+				}
+			}
+		}
+		y := ebnf.Alternative{}
+		for _, v := range x {
+			y = append(y, NormalizeExpression(v))
+		}
+		return y
+	case ebnf.Sequence:
+		for stable := false; !stable; {
+			stable = true
+		loop2:
+			for i, v := range x {
+				if a, ok := v.(*ebnf.Group); ok {
+					var aa ebnf.Expression
+					for {
+						aa = NormalizeExpression(a.Body)
+						if aaa, ok := aa.(*ebnf.Group); !ok {
+							break
+						} else {
+							a = aaa
+						}
+					}
+					switch a := aa.(type) {
+					case ebnf.Sequence:
+						y := ebnf.Sequence{}
+						if i > 0 {
+							y = append(y, x[:i]...)
+						}
+						y = append(y, a...)
+						y = append(y, x[i+1:]...)
+						x = y
+						stable = false
+						break loop2
+					}
+
+				}
+			}
+		}
+		y := ebnf.Sequence{}
+		for _, v := range x {
+			if v != nil {
+				y = append(y, NormalizeExpression(v))
+			}
+		}
+		return y
+	case *ebnf.Group:
+		switch xx := x.Body.(type) {
+		case *ebnf.Group:
+			return NormalizeExpression(xx)
+		default:
+			switch {
+			case prodLen(x) == 1:
+				return NormalizeExpression(x.Body)
+			default:
+				switch x.Body.(type) {
+				case *ebnf.Group, *ebnf.Option, *ebnf.Repetition:
+					return NormalizeExpression(x.Body)
+				default:
+					return &ebnf.Group{Body: NormalizeExpression(x.Body)}
+				}
+			}
+		}
+	case *ebnf.Option:
+		switch xx := x.Body.(type) {
+		case *ebnf.Group:
+			return &ebnf.Option{Body: NormalizeExpression(xx.Body)}
+		default:
+			return &ebnf.Option{Body: NormalizeExpression(x.Body)}
+		}
+	case *ebnf.Repetition:
+		switch xx := x.Body.(type) {
+		case *ebnf.Group:
+			return &ebnf.Repetition{Body: NormalizeExpression(xx.Body)}
+		default:
+			return &ebnf.Repetition{Body: NormalizeExpression(x.Body)}
+		}
+	case *ebnf.Name:
+		return &ebnf.Name{String: x.String}
+	case *ebnf.Token:
+		return &ebnf.Token{String: x.String}
+	case *ebnf.Range:
+		return &ebnf.Range{
+			Begin: &ebnf.Token{String: x.Begin.String},
+			End:   &ebnf.Token{String: x.End.String},
+		}
+	default:
+		panic(fmt.Sprintf("internal error %T(%v)", x, x))
+	}
+}
+
+// NormalizeProduction returns a normalized clone of prod. Positions are ignored.
+func NormalizeProduction(prod *ebnf.Production) *ebnf.Production {
+	return &ebnf.Production{Name: &ebnf.Name{String: prod.Name.String}, Expr: NormalizeExpression(prod.Expr)}
+}
+
 // Grammar is ebnf.Grammar extended with utility methods.
 type Grammar ebnf.Grammar
 
@@ -188,6 +322,9 @@ func (g Grammar) BNF(start string, nameInventor func(name string) string) (r Gra
 			}
 		}
 	}
+	if err != nil {
+		return
+	}
 
 	var f func(string, int, ebnf.Expression) ebnf.Expression
 
@@ -258,147 +395,13 @@ func (g Grammar) BNF(start string, nameInventor func(name string) string) (r Gra
 	return
 }
 
-// Clone returns a normalized clone of g. Positions are ignored.
-func (g Grammar) Clone() (r Grammar) {
+// Normalize returns a normalized clone of g. Positions are ignored.
+func (g Grammar) Normalize() (r Grammar) {
 	r = Grammar{}
 	for name, prod := range g {
-		r[name] = CloneProduction(prod)
+		r[name] = NormalizeProduction(prod)
 	}
 	return
-}
-
-// CloneExpression returns a normalized clone of expr. Positions are ignored.
-func CloneExpression(expr ebnf.Expression) ebnf.Expression {
-	switch x := expr.(type) {
-	case nil:
-		return nil
-	case ebnf.Alternative:
-		for stable := false; !stable; {
-			stable = true
-		loop:
-			for i, v := range x {
-				if a, ok := v.(*ebnf.Group); ok {
-					var aa ebnf.Expression
-					for {
-						aa = CloneExpression(a.Body)
-						if aaa, ok := aa.(*ebnf.Group); !ok {
-							break
-						} else {
-							a = aaa
-						}
-					}
-					switch a := aa.(type) {
-					case ebnf.Alternative:
-						y := ebnf.Alternative{}
-						if i > 0 {
-							y = append(y, x[:i]...)
-						}
-						y = append(y, a...)
-						y = append(y, x[i+1:]...)
-						x = y
-						stable = false
-						break loop
-					case ebnf.Sequence:
-						x[i] = a
-						continue
-					case nil:
-						x[i] = nil
-					}
-
-				}
-			}
-		}
-		y := ebnf.Alternative{}
-		for _, v := range x {
-			y = append(y, CloneExpression(v))
-		}
-		return y
-	case ebnf.Sequence:
-		for stable := false; !stable; {
-			stable = true
-		loop2:
-			for i, v := range x {
-				if a, ok := v.(*ebnf.Group); ok {
-					var aa ebnf.Expression
-					for {
-						aa = CloneExpression(a.Body)
-						if aaa, ok := aa.(*ebnf.Group); !ok {
-							break
-						} else {
-							a = aaa
-						}
-					}
-					switch a := aa.(type) {
-					case ebnf.Sequence:
-						y := ebnf.Sequence{}
-						if i > 0 {
-							y = append(y, x[:i]...)
-						}
-						y = append(y, a...)
-						y = append(y, x[i+1:]...)
-						x = y
-						stable = false
-						break loop2
-					}
-
-				}
-			}
-		}
-		y := ebnf.Sequence{}
-		for _, v := range x {
-			if v != nil {
-				y = append(y, CloneExpression(v))
-			}
-		}
-		return y
-	case *ebnf.Group:
-		switch xx := x.Body.(type) {
-		case *ebnf.Group:
-			return CloneExpression(xx)
-		default:
-			switch {
-			case prodLen(x) == 1:
-				return CloneExpression(x.Body)
-			default:
-				switch x.Body.(type) {
-				case *ebnf.Group, *ebnf.Option, *ebnf.Repetition:
-					return CloneExpression(x.Body)
-				default:
-					return &ebnf.Group{Body: CloneExpression(x.Body)}
-				}
-			}
-		}
-	case *ebnf.Option:
-		switch xx := x.Body.(type) {
-		case *ebnf.Group:
-			return &ebnf.Option{Body: CloneExpression(xx.Body)}
-		default:
-			return &ebnf.Option{Body: CloneExpression(x.Body)}
-		}
-	case *ebnf.Repetition:
-		switch xx := x.Body.(type) {
-		case *ebnf.Group:
-			return &ebnf.Repetition{Body: CloneExpression(xx.Body)}
-		default:
-			return &ebnf.Repetition{Body: CloneExpression(x.Body)}
-		}
-	case *ebnf.Name:
-		return &ebnf.Name{String: x.String}
-	case *ebnf.Token:
-		return &ebnf.Token{String: x.String}
-	case *ebnf.Range:
-		return &ebnf.Range{
-			Begin: &ebnf.Token{String: x.Begin.String},
-			End:   &ebnf.Token{String: x.End.String},
-		}
-	default:
-		panic(fmt.Sprintf("internal error %T(%v)", x, x))
-	}
-}
-
-// CloneProduction returns a normalized clone of prod. Positions are ignored.
-func CloneProduction(prod *ebnf.Production) *ebnf.Production {
-	return &ebnf.Production{Name: &ebnf.Name{String: prod.Name.String}, Expr: CloneExpression(prod.Expr)}
 }
 
 // _Reduce attempts to remove productions from g by inlining eligible
@@ -421,6 +424,23 @@ func CloneProduction(prod *ebnf.Production) *ebnf.Production {
 // reduction was performed.
 //
 // 'start' is the name of the start production.
+//
+// Note: For BNF grammars, the term 'reduce' migh be a bit confusing. Consider:
+//
+//	P = "A"
+//	  | "B" .
+//
+// The concept of "reducing" applies only when this grammar is viewed as having
+// only one production - "P", which strictly holds only in the EBNF case. In
+// BNF, the above grammar is the same as (still written in EBNF notation):
+//
+//	P = "A" .
+//	P = "B" .
+//
+// The production P has two rules. _Reduce can make the number of productions
+// names lower, but the number of _rules_ can often grow in the same time.
+//
+// In other words, _Reduce is _not_ a tool to generate minimal grammars.
 func (g Grammar) _Reduce(start string, all bool) (err error) {
 	for a, b := -1, len(g); a != b; a, b = b, len(g) {
 		for name := range g {
@@ -485,6 +505,8 @@ func (g Grammar) _Reduce(start string, all bool) (err error) {
 //
 // Note: Invoking _ReduceOne for the start production will render the grammar
 // unusable.
+//
+// Note: Algorithm used is naive, performance of this method is poor.
 func (g Grammar) _ReduceOne(name string, all bool) (err error) {
 	if !ast.IsExported(name) {
 		return // lexical
@@ -540,7 +562,7 @@ func (g Grammar) reduceEBNF(what string, where map[string]bool) {
 					break
 				}
 
-				*expr = &ebnf.Group{Body: CloneExpression(g[x.String].Expr)}
+				*expr = &ebnf.Group{Body: NormalizeExpression(g[x.String].Expr)}
 			case *ebnf.Token:
 				// nop
 			default:
@@ -549,7 +571,7 @@ func (g Grammar) reduceEBNF(what string, where map[string]bool) {
 		}
 		prod := g[name]
 		f(&prod.Expr)
-		prod.Expr = CloneExpression(prod.Expr) // normalize
+		prod.Expr = NormalizeExpression(prod.Expr) // normalize
 	}
 	delete(g, what)
 }

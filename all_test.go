@@ -312,7 +312,7 @@ func TestClone(t *testing.T) {
 			continue
 		}
 
-		g2 := g.Clone()
+		g2 := g.Normalize()
 		if g, e := g2.String(), g.String(); g != e {
 			t.Log(g)
 			t.Log(e)
@@ -390,7 +390,7 @@ func TestReduceEBNF0(t *testing.T) {
 			continue
 		}
 
-		g2 := g.Clone()
+		g2 := g.Normalize()
 		if err := g2._Reduce("S", test.all); err != nil {
 			t.Error(i, err)
 			continue
@@ -420,7 +420,7 @@ func TestReduceEBNF(t *testing.T) {
 			continue
 		}
 
-		g2 := g.Clone()
+		g2 := g.Normalize()
 		if err = g2._Reduce("Start", false); err != nil {
 			t.Error(i, err)
 			continue
