@@ -288,7 +288,7 @@ func (g Grammar) Analyze() (r *Report, err error) {
 	return
 }
 
-// BNF returns g converted to a Grammar without any of:
+// BNF returns g converted to a grammar without any of:
 //
 //	*ebnf.Group
 //	*ebnf.Option
@@ -423,8 +423,8 @@ func (g Grammar) BNF(start string, nameInventor func(name string) string) (r Gra
 //
 //	Start = "0" "abc" "9" .
 //
-// Eligible productions are non self referential (`P = P | Q .`) non terminals
-// used only once (or unlimited times when all == true).
+// Eligible productions are non self referential (eg. `P = P | P Q .`) non
+// terminals used only once (or unlimited times when all == true).
 //
 // If g is a BNF grammar, it will still be a BNF grammar after Inline.
 //
@@ -442,7 +442,6 @@ func (g Grammar) Inline(start string, all bool) (err error) {
 		if tests {
 			sort.Strings(s) // Reproducible result for testing
 		}
-		i := 0 //TODO-
 		for _, name := range s {
 			if name == start || !ast.IsExported(name) {
 				continue // lexical
@@ -451,12 +450,6 @@ func (g Grammar) Inline(start string, all bool) (err error) {
 			if err = g.InlineOne(name, all); err != nil {
 				return
 			}
-
-			//TODO-
-			if i == 1e6 {
-				break
-			}
-			i++
 		}
 	}
 	return
@@ -474,8 +467,8 @@ func (g Grammar) Inline(start string, all bool) (err error) {
 //	Start = "0" "abc" Def "9" .
 //	Def = "X" | "abc .
 //
-// Eligible productions are non self referential (`P = P | Q .`) non terminals
-// used only once (or unlimited times when all == true).
+// Eligible productions are non self referential (eg. `P = P | P Q .`) non
+// terminals used only once (or unlimited times when all == true).
 //
 // If g is a BNF grammar, it will still be a BNF grammar after InlineOne.
 //
@@ -512,7 +505,7 @@ func (g Grammar) Inline(start string, all bool) (err error) {
 // Note: Invoking InlineOne for the start production may render the grammar
 // unusable.
 func (g Grammar) InlineOne(name string, all bool) (err error) {
-	//TODO Algorithm currently used is naive, performance of this method is poor.
+	//TODO "Algorithm" used is naive, performance is poor.
 	if !ast.IsExported(name) {
 		return // lexical
 	}
@@ -537,11 +530,7 @@ func (g Grammar) InlineOne(name string, all bool) (err error) {
 	return
 }
 
-func orthogonalBNF(expr0 ebnf.Expression) ebnf.Expression {
-	if expr0 == nil {
-		return ebnf.Alternative{ebnf.Sequence{nil}}
-	}
-
+func orthogonalBNF(expr0 ebnf.Expression) (yy ebnf.Expression) {
 	var f func(int, ebnf.Expression) ebnf.Expression
 	f = func(lvl int, expr ebnf.Expression) ebnf.Expression {
 		lvl++
@@ -549,9 +538,9 @@ func orthogonalBNF(expr0 ebnf.Expression) ebnf.Expression {
 		case nil, *ebnf.Token, *ebnf.Range, *ebnf.Name:
 			switch lvl {
 			case 2:
-				return ebnf.Sequence{x}
+				return ebnf.Sequence{0: x}
 			default:
-				return x
+				return ebnf.Alternative{0: ebnf.Sequence{0: expr}}
 			}
 		case ebnf.Alternative:
 			switch lvl {
@@ -567,7 +556,7 @@ func orthogonalBNF(expr0 ebnf.Expression) ebnf.Expression {
 		case ebnf.Sequence:
 			switch lvl {
 			case 1:
-				return ebnf.Alternative{f(lvl, x)}
+				return ebnf.Alternative{0: f(lvl, x)}
 			default:
 				y := ebnf.Sequence{}
 				for _, v := range x {
@@ -575,8 +564,6 @@ func orthogonalBNF(expr0 ebnf.Expression) ebnf.Expression {
 					case *ebnf.Name, *ebnf.Token:
 						y = append(y, v)
 					default:
-						dbg("otrho input:\n%s", Grammar(nil).dstr(expr0))
-						dbg("%s", Grammar(nil).dstr(x))
 						panic(fmt.Sprintf("internal error %d %T(%v)", lvl, vv, vv))
 					}
 				}
@@ -590,11 +577,8 @@ func orthogonalBNF(expr0 ebnf.Expression) ebnf.Expression {
 }
 
 func (g Grammar) inlineBNF(what string, where map[string]bool) {
-	dbg("inlineBNF %q", what)
-	dbg("%s", g.dstr(g[what]))
 	inline := orthogonalBNF(g[what].Expr).(ebnf.Alternative)
 	for name := range where {
-		dbg("into %q", name)
 		var f func(ebnf.Expression) ebnf.Expression
 		f = func(expr ebnf.Expression) ebnf.Expression {
 			switch x := expr.(type) {
@@ -619,7 +603,7 @@ func (g Grammar) inlineBNF(what string, where map[string]bool) {
 					return x
 				}
 
-				in := ebnf.Alternative{x}
+				in := ebnf.Alternative{0: x}
 				out := ebnf.Alternative{}
 				for len(in) != 0 {
 					seq := in[0].(ebnf.Sequence)

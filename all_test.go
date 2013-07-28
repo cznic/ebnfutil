@@ -111,6 +111,7 @@ func (g Grammar) dstr(expr ebnf.Expression) string {
 	h(expr)
 	return buf.String()
 }
+
 func TestString(t *testing.T) {
 	for i, fname := range testfiles {
 		fname = filepath.Join(testdata, fname)
@@ -594,10 +595,6 @@ func TestInlineBNF0(t *testing.T) {
 
 func TestInlineBNF(t *testing.T) {
 	for i, fname := range testfiles {
-		if fname != "expr.ebnf" { //TODO-
-			continue
-		}
-
 		fname = filepath.Join(testdata, fname)
 		bsrc, err := ioutil.ReadFile(fname)
 		if err != nil {
@@ -632,7 +629,7 @@ func TestInlineBNF(t *testing.T) {
 		}
 
 		if g, e := g2.String(), string(ref); g != e {
-			t.Errorf("----\nsrc0\n%s\n----\nsrc:\n%s\n----\ngot:\n%s\n----\nexp:\n%s", g0, g1, g2, e)
+			t.Errorf("got:\n%s\n----\nexp:\n%s", g2, e)
 			continue
 		}
 
