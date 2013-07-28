@@ -1,0 +1,433 @@
+add_op = "+"
+	| "-"
+	| "|"
+	| "^" .
+assign_op = assign_op_1 "=" .
+assign_op_1 =
+	| assign_op_1_1 .
+assign_op_1_1 = add_op | mul_op .
+big_u_value = "\\" "U" hex_digit hex_digit hex_digit hex_digit hex_digit hex_digit hex_digit hex_digit .
+binary_op = "||"
+	| "&&"
+	| rel_op
+	| add_op
+	| mul_op .
+byte_value = octal_byte_value | hex_byte_value .
+decimal_digit = "0" … "9" .
+decimal_lit = "1" … "9" decimal_lit_1 .
+decimal_lit_1 =
+	| decimal_lit_1 decimal_digit .
+decimals = decimal_digit decimals_1 .
+decimals_1 =
+	| decimals_1 decimal_digit .
+escaped_char = "\\" escaped_char_1 .
+escaped_char_1 = "a"
+	| "b"
+	| "f"
+	| "n"
+	| "r"
+	| "t"
+	| "v"
+	| "\\"
+	| "'"
+	| "\"" .
+exponent = exponent_1 exponent_2 decimals .
+exponent_1 = "e" | "E" .
+exponent_2 =
+	| exponent_2_1 .
+exponent_2_1 = "+" | "-" .
+float_lit = decimals "." float_lit_1 float_lit_2
+	| decimals exponent
+	| "." decimals float_lit_3 .
+float_lit_1 =
+	| decimals .
+float_lit_2 =
+	| exponent .
+float_lit_3 =
+	| exponent .
+hex_byte_value = "\\" "x" hex_digit hex_digit .
+hex_digit = "0" … "9"
+	| "A" … "F"
+	| "a" … "f" .
+hex_lit = "0" hex_lit_1 hex_digit hex_lit_2 .
+hex_lit_1 = "x" | "X" .
+hex_lit_2 =
+	| hex_lit_2 hex_digit .
+identifier = letter identifier_1 .
+identifier_1 =
+	| identifier_1 identifier_1_1 .
+identifier_1_1 = letter | unicode_digit .
+imaginary_lit = imaginary_lit_1 "i" .
+imaginary_lit_1 = decimals | float_lit .
+int_lit = decimal_lit
+	| octal_lit
+	| hex_lit .
+interpreted_string_lit = "\"" interpreted_string_lit_1 "\"" .
+interpreted_string_lit_1 =
+	| interpreted_string_lit_1 interpreted_string_lit_1_1 .
+interpreted_string_lit_1_1 = unicode_value | byte_value .
+letter = unicode_letter | "_" .
+little_u_value = "\\" "u" hex_digit hex_digit hex_digit hex_digit .
+mul_op = "*"
+	| "/"
+	| "%"
+	| "<<"
+	| ">>"
+	| "&"
+	| "&^" .
+newline = .
+octal_byte_value = "\\" octal_digit octal_digit octal_digit .
+octal_digit = "0" … "7" .
+octal_lit = "0" octal_lit_1 .
+octal_lit_1 =
+	| octal_lit_1 octal_digit .
+raw_string_lit = "`" raw_string_lit_1 "`" .
+raw_string_lit_1 =
+	| raw_string_lit_1 raw_string_lit_1_1 .
+raw_string_lit_1_1 = unicode_char | newline .
+rel_op = "=="
+	| "!="
+	| "<"
+	| "<="
+	| ">"
+	| ">=" .
+rune_lit = "'" rune_lit_1 "'" .
+rune_lit_1 = unicode_value | byte_value .
+string_lit = raw_string_lit | interpreted_string_lit .
+unary_op = "+"
+	| "-"
+	| "!"
+	| "^"
+	| "*"
+	| "&"
+	| "<-" .
+unicode_char = .
+unicode_digit = .
+unicode_letter = .
+unicode_value = unicode_char
+	| little_u_value
+	| big_u_value
+	| escaped_char .
+
+AnonymousField = AnonymousField_1 TypeName .
+AnonymousField_1 =
+	| "*" .
+ArgumentList = ExpressionList ArgumentList_1 .
+ArgumentList_1 =
+	| "..." .
+ArrayLength = Expression .
+ArrayType = "[" ArrayLength "]" ElementType .
+Assignment = ExpressionList assign_op ExpressionList .
+BaseType = Type .
+BaseTypeName = identifier .
+BasicLit = int_lit
+	| float_lit
+	| imaginary_lit
+	| rune_lit
+	| string_lit .
+Block = "{" StatementList "}" .
+BreakStmt = "break" BreakStmt_1 .
+BreakStmt_1 =
+	| Label .
+BuiltinArgs = Type BuiltinArgs_1
+	| ArgumentList .
+BuiltinArgs_1 =
+	| "," ArgumentList .
+BuiltinCall = identifier "(" BuiltinCall_1 ")" .
+BuiltinCall_1 =
+	| BuiltinArgs BuiltinCall_1_1 .
+BuiltinCall_1_1 =
+	| "," .
+Call = "(" Call_1 ")" .
+Call_1 =
+	| ArgumentList Call_1_1 .
+Call_1_1 =
+	| "," .
+Channel = Expression .
+ChannelType = ChannelType_1 ElementType .
+ChannelType_1 = "chan" ChannelType_1_1
+	| "<-" "chan" .
+ChannelType_1_1 =
+	| "<-" .
+CommCase = "case" CommCase_1
+	| "default" .
+CommCase_1 = SendStmt | RecvStmt .
+CommClause = CommCase ":" StatementList .
+CompositeLit = LiteralType LiteralValue .
+Condition = Expression .
+ConstDecl = "const" ConstDecl_1 .
+ConstDecl_1 = ConstSpec
+	| "(" ConstDecl_1_1 ")" .
+ConstDecl_1_1 =
+	| ConstDecl_1_1 ConstSpec ";" .
+ConstSpec = IdentifierList ConstSpec_1 .
+ConstSpec_1 =
+	| ConstSpec_1_1 "=" ExpressionList .
+ConstSpec_1_1 =
+	| Type .
+ContinueStmt = "continue" ContinueStmt_1 .
+ContinueStmt_1 =
+	| Label .
+Conversion = Type "(" Expression Conversion_1 ")" .
+Conversion_1 =
+	| "," .
+Declaration = ConstDecl
+	| TypeDecl
+	| VarDecl .
+DeferStmt = "defer" Expression .
+Element = Element_1 Value .
+ElementIndex = Expression .
+ElementList = Element ElementList_1 .
+ElementList_1 =
+	| ElementList_1 "," Element .
+ElementType = Type .
+Element_1 =
+	| Key ":" .
+EmptyStmt = .
+ExprCaseClause = ExprSwitchCase ":" StatementList .
+ExprSwitchCase = "case" ExpressionList
+	| "default" .
+ExprSwitchStmt = "switch" ExprSwitchStmt_1 ExprSwitchStmt_2 "{" ExprSwitchStmt_3 "}" .
+ExprSwitchStmt_1 =
+	| SimpleStmt ";" .
+ExprSwitchStmt_2 =
+	| Expression .
+ExprSwitchStmt_3 =
+	| ExprSwitchStmt_3 ExprCaseClause .
+Expression = UnaryExpr
+	| Expression binary_op UnaryExpr .
+ExpressionList = Expression ExpressionList_1 .
+ExpressionList_1 =
+	| ExpressionList_1 "," Expression .
+ExpressionStmt = Expression .
+FallthroughStmt = "fallthrough" .
+FieldDecl = FieldDecl_1 FieldDecl_2 .
+FieldDecl_1 = IdentifierList Type
+	| AnonymousField .
+FieldDecl_2 =
+	| Tag .
+FieldName = identifier .
+ForClause = ForClause_1 ";" ForClause_2 ";" ForClause_3 .
+ForClause_1 =
+	| InitStmt .
+ForClause_2 =
+	| Condition .
+ForClause_3 =
+	| PostStmt .
+ForStmt = "for" ForStmt_1 Block .
+ForStmt_1 =
+	| ForStmt_1_1 .
+ForStmt_1_1 = Condition
+	| ForClause
+	| RangeClause .
+Function = Signature FunctionBody .
+FunctionBody = Block .
+FunctionDecl = "func" FunctionName FunctionDecl_1 .
+FunctionDecl_1 = Function | Signature .
+FunctionLit = "func" Function .
+FunctionName = identifier .
+FunctionType = "func" Signature .
+GoStmt = "go" Expression .
+GotoStmt = "goto" Label .
+IdentifierList = identifier IdentifierList_1 .
+IdentifierList_1 =
+	| IdentifierList_1 "," identifier .
+IfStmt = "if" IfStmt_1 Expression Block IfStmt_2 .
+IfStmt_1 =
+	| SimpleStmt ";" .
+IfStmt_2 =
+	| "else" IfStmt_2_1 .
+IfStmt_2_1 = IfStmt | Block .
+ImportDecl = "import" ImportDecl_1 .
+ImportDecl_1 = ImportSpec
+	| "(" ImportDecl_1_1 ")" .
+ImportDecl_1_1 =
+	| ImportDecl_1_1 ImportSpec ";" .
+ImportPath = string_lit .
+ImportSpec = ImportSpec_1 ImportPath .
+ImportSpec_1 =
+	| ImportSpec_1_1 .
+ImportSpec_1_1 = "." | PackageName .
+IncDecStmt = Expression IncDecStmt_1 .
+IncDecStmt_1 = "++" | "--" .
+Index = "[" Expression "]" .
+InitStmt = SimpleStmt .
+InterfaceType = "interface" "{" InterfaceType_1 "}" .
+InterfaceTypeName = TypeName .
+InterfaceType_1 =
+	| InterfaceType_1 MethodSpec ";" .
+Key = FieldName | ElementIndex .
+KeyType = Type .
+Label = identifier .
+LabeledStmt = Label ":" Statement .
+Literal = BasicLit
+	| CompositeLit
+	| FunctionLit .
+LiteralType = StructType
+	| ArrayType
+	| "[" "..." "]" ElementType
+	| SliceType
+	| MapType
+	| TypeName .
+LiteralValue = "{" LiteralValue_1 "}" .
+LiteralValue_1 =
+	| ElementList LiteralValue_1_1 .
+LiteralValue_1_1 =
+	| "," .
+MapType = "map" "[" KeyType "]" ElementType .
+MethodDecl = "func" Receiver MethodName MethodDecl_1 .
+MethodDecl_1 = Function | Signature .
+MethodExpr = ReceiverType "." MethodName .
+MethodName = identifier .
+MethodSpec = MethodName Signature
+	| InterfaceTypeName .
+Operand = Literal
+	| OperandName
+	| MethodExpr
+	| "(" Expression ")" .
+OperandName = identifier | QualifiedIdent .
+PackageClause = "package" PackageName .
+PackageName = identifier .
+ParameterDecl = ParameterDecl_1 ParameterDecl_2 Type .
+ParameterDecl_1 =
+	| IdentifierList .
+ParameterDecl_2 =
+	| "..." .
+ParameterList = ParameterDecl ParameterList_1 .
+ParameterList_1 =
+	| ParameterList_1 "," ParameterDecl .
+Parameters = "(" Parameters_1 ")" .
+Parameters_1 =
+	| ParameterList Parameters_1_1 .
+Parameters_1_1 =
+	| "," .
+PointerType = "*" BaseType .
+PostStmt = SimpleStmt .
+PrimaryExpr = Operand
+	| Conversion
+	| BuiltinCall
+	| PrimaryExpr Selector
+	| PrimaryExpr Index
+	| PrimaryExpr Slice
+	| PrimaryExpr TypeAssertion
+	| PrimaryExpr Call .
+QualifiedIdent = PackageName "." identifier .
+RangeClause = RangeClause_1 "range" Expression .
+RangeClause_1 = ExpressionList "="
+	| IdentifierList ":=" .
+Receiver = "(" Receiver_1 Receiver_2 BaseTypeName ")" .
+ReceiverType = TypeName
+	| "(" "*" TypeName ")"
+	| "(" ReceiverType ")" .
+Receiver_1 =
+	| identifier .
+Receiver_2 =
+	| "*" .
+RecvExpr = Expression .
+RecvStmt = RecvStmt_1 RecvExpr .
+RecvStmt_1 =
+	| RecvStmt_1_1 .
+RecvStmt_1_1 = ExpressionList "="
+	| IdentifierList ":=" .
+Result = Parameters | Type .
+ReturnStmt = "return" ReturnStmt_1 .
+ReturnStmt_1 =
+	| ExpressionList .
+SelectStmt = "select" "{" SelectStmt_1 "}" .
+SelectStmt_1 =
+	| SelectStmt_1 CommClause .
+Selector = "." identifier .
+SendStmt = Channel "<-" Expression .
+ShortVarDecl = IdentifierList ":=" ExpressionList .
+Signature = Parameters Signature_1 .
+Signature_1 =
+	| Result .
+SimpleStmt = EmptyStmt
+	| ExpressionStmt
+	| SendStmt
+	| IncDecStmt
+	| Assignment
+	| ShortVarDecl .
+Slice = "[" Slice_1 ":" Slice_2 "]" .
+SliceType = "[" "]" ElementType .
+Slice_1 =
+	| Expression .
+Slice_2 =
+	| Expression .
+Start = PackageClause ";" Start_1 Start_2 .
+Start_1 =
+	| Start_1 ImportDecl ";" .
+Start_2 =
+	| Start_2 TopLevelDecl ";" .
+Statement = Declaration
+	| LabeledStmt
+	| SimpleStmt
+	| GoStmt
+	| ReturnStmt
+	| BreakStmt
+	| ContinueStmt
+	| GotoStmt
+	| FallthroughStmt
+	| Block
+	| IfStmt
+	| SwitchStmt
+	| SelectStmt
+	| ForStmt
+	| DeferStmt .
+StatementList = StatementList_1 .
+StatementList_1 =
+	| StatementList_1 Statement ";" .
+StructType = "struct" "{" StructType_1 "}" .
+StructType_1 =
+	| StructType_1 FieldDecl ";" .
+SwitchStmt = ExprSwitchStmt | TypeSwitchStmt .
+Tag = string_lit .
+TopLevelDecl = Declaration
+	| FunctionDecl
+	| MethodDecl .
+Type = TypeName
+	| TypeLit
+	| "(" Type ")" .
+TypeAssertion = "." "(" Type ")" .
+TypeCaseClause = TypeSwitchCase ":" StatementList .
+TypeDecl = "type" TypeDecl_1 .
+TypeDecl_1 = TypeSpec
+	| "(" TypeDecl_1_1 ")" .
+TypeDecl_1_1 =
+	| TypeDecl_1_1 TypeSpec ";" .
+TypeList = Type TypeList_1 .
+TypeList_1 =
+	| TypeList_1 "," Type .
+TypeLit = ArrayType
+	| StructType
+	| PointerType
+	| FunctionType
+	| InterfaceType
+	| SliceType
+	| MapType
+	| ChannelType .
+TypeName = identifier | QualifiedIdent .
+TypeSpec = identifier Type .
+TypeSwitchCase = "case" TypeList
+	| "default" .
+TypeSwitchGuard = TypeSwitchGuard_1 PrimaryExpr "." "(" "type" ")" .
+TypeSwitchGuard_1 =
+	| identifier ":=" .
+TypeSwitchStmt = "switch" TypeSwitchStmt_1 TypeSwitchGuard "{" TypeSwitchStmt_2 "}" .
+TypeSwitchStmt_1 =
+	| SimpleStmt ";" .
+TypeSwitchStmt_2 =
+	| TypeSwitchStmt_2 TypeCaseClause .
+UnaryExpr = PrimaryExpr
+	| unary_op UnaryExpr .
+Value = Expression | LiteralValue .
+VarDecl = "var" VarDecl_1 .
+VarDecl_1 = VarSpec
+	| "(" VarDecl_1_1 ")" .
+VarDecl_1_1 =
+	| VarDecl_1_1 VarSpec ";" .
+VarSpec = IdentifierList VarSpec_1 .
+VarSpec_1 = Type VarSpec_1_1
+	| "=" ExpressionList .
+VarSpec_1_1 =
+	| "=" ExpressionList .
