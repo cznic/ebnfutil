@@ -1,14 +1,14 @@
 add_op = "+"
 	| "-"
 	| "|"
-	| "^"  .
+	| "^" .
 assign_op = [ add_op | mul_op ] "=" .
 big_u_value = "\\" "U" hex_digit hex_digit hex_digit hex_digit hex_digit hex_digit hex_digit hex_digit .
 binary_op = "||"
 	| "&&"
 	| rel_op
 	| add_op
-	| mul_op  .
+	| mul_op .
 byte_value = octal_byte_value | hex_byte_value .
 decimal_digit = "0" … "9" .
 decimal_lit = "1" … "9" { decimal_digit } .
@@ -23,22 +23,22 @@ escaped_char = "\\" (
 		| "v"
 		| "\\"
 		| "'"
-		| "\"" 
+		| "\""
 	  ) .
 exponent = ( "e" | "E" ) [ "+" | "-" ] decimals .
 float_lit = decimals "." [ decimals ] [ exponent ]
 	| decimals exponent
-	| "." decimals [ exponent ]  .
+	| "." decimals [ exponent ] .
 hex_byte_value = "\\" "x" hex_digit hex_digit .
 hex_digit = "0" … "9"
 	| "A" … "F"
-	| "a" … "f"  .
+	| "a" … "f" .
 hex_lit = "0" ( "x" | "X" ) hex_digit { hex_digit } .
 identifier = letter { letter | unicode_digit } .
 imaginary_lit = ( decimals | float_lit ) "i" .
 int_lit = decimal_lit
 	| octal_lit
-	| hex_lit  .
+	| hex_lit .
 interpreted_string_lit = "\"" { unicode_value | byte_value } "\"" .
 letter = unicode_letter | "_" .
 little_u_value = "\\" "u" hex_digit hex_digit hex_digit hex_digit .
@@ -48,7 +48,7 @@ mul_op = "*"
 	| "<<"
 	| ">>"
 	| "&"
-	| "&^"  .
+	| "&^" .
 newline = .
 octal_byte_value = "\\" octal_digit octal_digit octal_digit .
 octal_digit = "0" … "7" .
@@ -59,7 +59,7 @@ rel_op = "=="
 	| "<"
 	| "<="
 	| ">"
-	| ">="  .
+	| ">=" .
 rune_lit = "'" ( unicode_value | byte_value ) "'" .
 string_lit = raw_string_lit | interpreted_string_lit .
 unary_op = "+"
@@ -68,14 +68,14 @@ unary_op = "+"
 	| "^"
 	| "*"
 	| "&"
-	| "<-"  .
+	| "<-" .
 unicode_char = .
 unicode_digit = .
 unicode_letter = .
 unicode_value = unicode_char
 	| little_u_value
 	| big_u_value
-	| escaped_char  .
+	| escaped_char .
 
 AnonymousField = [ "*" ] TypeName .
 ArgumentList = ExpressionList [ "..." ] .
@@ -88,26 +88,26 @@ BasicLit = int_lit
 	| float_lit
 	| imaginary_lit
 	| rune_lit
-	| string_lit  .
+	| string_lit .
 Block = "{" StatementList "}" .
 BreakStmt = "break" [ Label ] .
 BuiltinArgs = Type [ "," ArgumentList ]
-	| ArgumentList  .
+	| ArgumentList .
 BuiltinCall = identifier "(" [ BuiltinArgs [ "," ] ] ")" .
 Call = "(" [ ArgumentList [ "," ] ] ")" .
 Channel = Expression .
 ChannelType = (
 		  "chan" [ "<-" ]
-		| "<-" "chan" 
+		| "<-" "chan"
 	  ) ElementType .
 CommCase = "case" ( SendStmt | RecvStmt )
-	| "default"  .
+	| "default" .
 CommClause = CommCase ":" StatementList .
 CompositeLit = LiteralType LiteralValue .
 Condition = Expression .
 ConstDecl = "const" (
 		  ConstSpec
-		| "(" { ConstSpec ";" } ")" 
+		| "(" { ConstSpec ";" } ")"
 	  ) .
 ConstSpec = IdentifierList [
 		 [ Type ] "=" ExpressionList
@@ -116,7 +116,7 @@ ContinueStmt = "continue" [ Label ] .
 Conversion = Type "(" Expression [ "," ] ")" .
 Declaration = ConstDecl
 	| TypeDecl
-	| VarDecl  .
+	| VarDecl .
 DeferStmt = "defer" Expression .
 Element = [ Key ":" ] Value .
 ElementIndex = Expression .
@@ -125,23 +125,23 @@ ElementType = Type .
 EmptyStmt = .
 ExprCaseClause = ExprSwitchCase ":" StatementList .
 ExprSwitchCase = "case" ExpressionList
-	| "default"  .
+	| "default" .
 ExprSwitchStmt = "switch" [ SimpleStmt ";" ] [ Expression ] "{" { ExprCaseClause } "}" .
 Expression = UnaryExpr
-	| Expression binary_op UnaryExpr  .
+	| Expression binary_op UnaryExpr .
 ExpressionList = Expression { "," Expression } .
 ExpressionStmt = Expression .
 FallthroughStmt = "fallthrough" .
 FieldDecl = (
 		  IdentifierList Type
-		| AnonymousField 
+		| AnonymousField
 	  ) [ Tag ] .
 FieldName = identifier .
 ForClause = [ InitStmt ] ";" [ Condition ] ";" [ PostStmt ] .
 ForStmt = "for" [
 		  Condition
 		| ForClause
-		| RangeClause 
+		| RangeClause
 	  ] Block .
 Function = Signature FunctionBody .
 FunctionBody = Block .
@@ -157,7 +157,7 @@ IfStmt = "if" [ SimpleStmt ";" ] Expression Block [
 	  ] .
 ImportDecl = "import" (
 		  ImportSpec
-		| "(" { ImportSpec ";" } ")" 
+		| "(" { ImportSpec ";" } ")"
 	  ) .
 ImportPath = string_lit .
 ImportSpec = [ "." | PackageName ] ImportPath .
@@ -172,24 +172,24 @@ Label = identifier .
 LabeledStmt = Label ":" Statement .
 Literal = BasicLit
 	| CompositeLit
-	| FunctionLit  .
+	| FunctionLit .
 LiteralType = StructType
 	| ArrayType
 	| "[" "..." "]" ElementType
 	| SliceType
 	| MapType
-	| TypeName  .
+	| TypeName .
 LiteralValue = "{" [ ElementList [ "," ] ] "}" .
 MapType = "map" "[" KeyType "]" ElementType .
 MethodDecl = "func" Receiver MethodName ( Function | Signature ) .
 MethodExpr = ReceiverType "." MethodName .
 MethodName = identifier .
 MethodSpec = MethodName Signature
-	| InterfaceTypeName  .
+	| InterfaceTypeName .
 Operand = Literal
 	| OperandName
 	| MethodExpr
-	| "(" Expression ")"  .
+	| "(" Expression ")" .
 OperandName = identifier | QualifiedIdent .
 PackageClause = "package" PackageName .
 PackageName = identifier .
@@ -205,20 +205,20 @@ PrimaryExpr = Operand
 	| PrimaryExpr Index
 	| PrimaryExpr Slice
 	| PrimaryExpr TypeAssertion
-	| PrimaryExpr Call  .
+	| PrimaryExpr Call .
 QualifiedIdent = PackageName "." identifier .
 RangeClause = (
 		  ExpressionList "="
-		| IdentifierList ":=" 
+		| IdentifierList ":="
 	  ) "range" Expression .
 Receiver = "(" [ identifier ] [ "*" ] BaseTypeName ")" .
 ReceiverType = TypeName
 	| "(" "*" TypeName ")"
-	| "(" ReceiverType ")"  .
+	| "(" ReceiverType ")" .
 RecvExpr = Expression .
 RecvStmt = [
 		  ExpressionList "="
-		| IdentifierList ":=" 
+		| IdentifierList ":="
 	  ] RecvExpr .
 Result = Parameters | Type .
 ReturnStmt = "return" [ ExpressionList ] .
@@ -232,7 +232,7 @@ SimpleStmt = EmptyStmt
 	| SendStmt
 	| IncDecStmt
 	| Assignment
-	| ShortVarDecl  .
+	| ShortVarDecl .
 Slice = "[" [ Expression ] ":" [ Expression ] "]" .
 SliceType = "[" "]" ElementType .
 Start = PackageClause ";" { ImportDecl ";" } { TopLevelDecl ";" } .
@@ -250,22 +250,22 @@ Statement = Declaration
 	| SwitchStmt
 	| SelectStmt
 	| ForStmt
-	| DeferStmt  .
+	| DeferStmt .
 StatementList = { Statement ";" } .
 StructType = "struct" "{" { FieldDecl ";" } "}" .
 SwitchStmt = ExprSwitchStmt | TypeSwitchStmt .
 Tag = string_lit .
 TopLevelDecl = Declaration
 	| FunctionDecl
-	| MethodDecl  .
+	| MethodDecl .
 Type = TypeName
 	| TypeLit
-	| "(" Type ")"  .
+	| "(" Type ")" .
 TypeAssertion = "." "(" Type ")" .
 TypeCaseClause = TypeSwitchCase ":" StatementList .
 TypeDecl = "type" (
 		  TypeSpec
-		| "(" { TypeSpec ";" } ")" 
+		| "(" { TypeSpec ";" } ")"
 	  ) .
 TypeList = Type { "," Type } .
 TypeLit = ArrayType
@@ -275,21 +275,21 @@ TypeLit = ArrayType
 	| InterfaceType
 	| SliceType
 	| MapType
-	| ChannelType  .
+	| ChannelType .
 TypeName = identifier | QualifiedIdent .
 TypeSpec = identifier Type .
 TypeSwitchCase = "case" TypeList
-	| "default"  .
+	| "default" .
 TypeSwitchGuard = [ identifier ":=" ] PrimaryExpr "." "(" "type" ")" .
 TypeSwitchStmt = "switch" [ SimpleStmt ";" ] TypeSwitchGuard "{" { TypeCaseClause } "}" .
 UnaryExpr = PrimaryExpr
-	| unary_op UnaryExpr  .
+	| unary_op UnaryExpr .
 Value = Expression | LiteralValue .
 VarDecl = "var" (
 		  VarSpec
-		| "(" { VarSpec ";" } ")" 
+		| "(" { VarSpec ";" } ")"
 	  ) .
 VarSpec = IdentifierList (
 		  Type [ "=" ExpressionList ]
-		| "=" ExpressionList 
+		| "=" ExpressionList
 	  ) .

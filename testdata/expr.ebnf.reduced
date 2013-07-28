@@ -13,14 +13,14 @@ Expression = Term {
 			  "^"
 			| "|"
 			| "-"
-			| "+" 
+			| "+"
 		  ) Term
 	  } .
 Factor = [
 		  "^"
 		| "!"
 		| "-"
-		| "+" 
+		| "+"
 	  ] (
 		  boolean
 		| float
@@ -31,7 +31,7 @@ Factor = [
 		| QualifiedIdent "(" [
 			 Expression { "," Expression }
 		  ] ")"
-		| "(" Expression ")" 
+		| "(" Expression ")"
 	  ) .
 QualifiedIdent = identifier [ "." identifier ] .
 Start = Expression .
@@ -43,6 +43,6 @@ Term = Factor {
 			| rsh
 			| "%"
 			| "/"
-			| "*" 
+			| "*"
 		  ) Factor
 	  } .

@@ -1,14 +1,14 @@
 add_op = "+"
 	| "-"
 	| "|"
-	| "^"  .
+	| "^" .
 assign_op = [ add_op | mul_op ] "=" .
 big_u_value = "\\" "U" hex_digit hex_digit hex_digit hex_digit hex_digit hex_digit hex_digit hex_digit .
 binary_op = "||"
 	| "&&"
 	| rel_op
 	| add_op
-	| mul_op  .
+	| mul_op .
 byte_value = octal_byte_value | hex_byte_value .
 decimal_digit = "0" … "9" .
 decimal_lit = "1" … "9" { decimal_digit } .
@@ -23,22 +23,22 @@ escaped_char = "\\" (
 		| "v"
 		| "\\"
 		| "'"
-		| "\"" 
+		| "\""
 	  ) .
 exponent = ( "e" | "E" ) [ "+" | "-" ] decimals .
 float_lit = decimals "." [ decimals ] [ exponent ]
 	| decimals exponent
-	| "." decimals [ exponent ]  .
+	| "." decimals [ exponent ] .
 hex_byte_value = "\\" "x" hex_digit hex_digit .
 hex_digit = "0" … "9"
 	| "A" … "F"
-	| "a" … "f"  .
+	| "a" … "f" .
 hex_lit = "0" ( "x" | "X" ) hex_digit { hex_digit } .
 identifier = letter { letter | unicode_digit } .
 imaginary_lit = ( decimals | float_lit ) "i" .
 int_lit = decimal_lit
 	| octal_lit
-	| hex_lit  .
+	| hex_lit .
 interpreted_string_lit = "\"" { unicode_value | byte_value } "\"" .
 letter = unicode_letter | "_" .
 little_u_value = "\\" "u" hex_digit hex_digit hex_digit hex_digit .
@@ -48,7 +48,7 @@ mul_op = "*"
 	| "<<"
 	| ">>"
 	| "&"
-	| "&^"  .
+	| "&^" .
 newline = .
 octal_byte_value = "\\" octal_digit octal_digit octal_digit .
 octal_digit = "0" … "7" .
@@ -59,7 +59,7 @@ rel_op = "=="
 	| "<"
 	| "<="
 	| ">"
-	| ">="  .
+	| ">=" .
 rune_lit = "'" ( unicode_value | byte_value ) "'" .
 string_lit = raw_string_lit | interpreted_string_lit .
 unary_op = "+"
@@ -68,14 +68,14 @@ unary_op = "+"
 	| "^"
 	| "*"
 	| "&"
-	| "<-"  .
+	| "<-" .
 unicode_char = .
 unicode_digit = .
 unicode_letter = .
 unicode_value = unicode_char
 	| little_u_value
 	| big_u_value
-	| escaped_char  .
+	| escaped_char .
 
 ArgumentList = ExpressionList [ "..." ] .
 ArrayType = "[" Expression "]" ElementType .
@@ -86,22 +86,22 @@ ConstSpec = IdentifierList [
 	  ] .
 Declaration = "const" (
 		  ConstSpec
-		| "(" { ConstSpec ";" } ")" 
+		| "(" { ConstSpec ";" } ")"
 	  )
 	| "type" (
 		  TypeSpec
-		| "(" { TypeSpec ";" } ")" 
+		| "(" { TypeSpec ";" } ")"
 	  )
 	| "var" (
 		  VarSpec
-		| "(" { VarSpec ";" } ")" 
-	  )  .
+		| "(" { VarSpec ";" } ")"
+	  ) .
 Element = [
 		 ( identifier | Expression ) ":"
 	  ] ( Expression | LiteralValue ) .
 ElementType = Type .
 Expression = UnaryExpr
-	| Expression binary_op UnaryExpr  .
+	| Expression binary_op UnaryExpr .
 ExpressionList = Expression { "," Expression } .
 Function = Signature Block .
 IdentifierList = identifier { "," identifier } .
@@ -131,7 +131,7 @@ PrimaryExpr = int_lit
 		| "[" "..." "]" ElementType
 		| SliceType
 		| MapType
-		| TypeName 
+		| TypeName
 	  ) LiteralValue
 	| "func" Function
 	| identifier
@@ -142,18 +142,18 @@ PrimaryExpr = int_lit
 	| identifier "(" [
 		 (
 			  Type [ "," ArgumentList ]
-			| ArgumentList 
+			| ArgumentList
 		  ) [ "," ]
 	  ] ")"
 	| PrimaryExpr "." identifier
 	| PrimaryExpr "[" Expression "]"
 	| PrimaryExpr "[" [ Expression ] ":" [ Expression ] "]"
 	| PrimaryExpr "." "(" Type ")"
-	| PrimaryExpr "(" [ ArgumentList [ "," ] ] ")"  .
+	| PrimaryExpr "(" [ ArgumentList [ "," ] ] ")" .
 QualifiedIdent = PackageName "." identifier .
 ReceiverType = TypeName
 	| "(" "*" TypeName ")"
-	| "(" ReceiverType ")"  .
+	| "(" ReceiverType ")" .
 SendStmt = Expression "<-" Expression .
 Signature = Parameters [ Parameters | Type ] .
 SimpleStmt =
@@ -161,18 +161,18 @@ SimpleStmt =
 	| SendStmt
 	| Expression ( "++" | "--" )
 	| ExpressionList assign_op ExpressionList
-	| IdentifierList ":=" ExpressionList  .
+	| IdentifierList ":=" ExpressionList .
 SliceType = "[" "]" ElementType .
 Start = "package" PackageName ";" {
 		 "import" (
 			  ImportSpec
-			| "(" { ImportSpec ";" } ")" 
+			| "(" { ImportSpec ";" } ")"
 		  ) ";"
 	  } {
 		 (
 			  Declaration
 			| "func" identifier ( Function | Signature )
-			| "func" "(" [ identifier ] [ "*" ] identifier ")" MethodName ( Function | Signature ) 
+			| "func" "(" [ identifier ] [ "*" ] identifier ")" MethodName ( Function | Signature )
 		  ) ";"
 	  } .
 Statement = Declaration
@@ -189,13 +189,13 @@ Statement = Declaration
 	| "switch" [ SimpleStmt ";" ] [ Expression ] "{" {
 		 (
 			  "case" ExpressionList
-			| "default" 
+			| "default"
 		  ) ":" StatementList
 	  } "}"
 	| "switch" [ SimpleStmt ";" ] [ identifier ":=" ] PrimaryExpr "." "(" "type" ")" "{" {
 		 (
 			  "case" Type { "," Type }
-			| "default" 
+			| "default"
 		  ) ":" StatementList
 	  } "}"
 	| "select" "{" {
@@ -204,10 +204,10 @@ Statement = Declaration
 				  SendStmt
 				| [
 					  ExpressionList "="
-					| IdentifierList ":=" 
-				  ] Expression 
+					| IdentifierList ":="
+				  ] Expression
 			  )
-			| "default" 
+			| "default"
 		  ) ":" StatementList
 	  } "}"
 	| "for" [
@@ -215,15 +215,15 @@ Statement = Declaration
 		| [ SimpleStmt ] ";" [ Condition ] ";" [ SimpleStmt ]
 		| (
 			  ExpressionList "="
-			| IdentifierList ":=" 
-		  ) "range" Expression 
+			| IdentifierList ":="
+		  ) "range" Expression
 	  ] Block
-	| "defer" Expression  .
+	| "defer" Expression .
 StatementList = { Statement ";" } .
 StructType = "struct" "{" {
 		 (
 			  IdentifierList Type
-			| [ "*" ] TypeName 
+			| [ "*" ] TypeName
 		  ) [ string_lit ] ";"
 	  } "}" .
 Type = TypeName
@@ -234,21 +234,21 @@ Type = TypeName
 	| "interface" "{" {
 		 (
 			  MethodName Signature
-			| TypeName 
+			| TypeName
 		  ) ";"
 	  } "}"
 	| SliceType
 	| MapType
 	| (
 		  "chan" [ "<-" ]
-		| "<-" "chan" 
+		| "<-" "chan"
 	  ) ElementType
-	| "(" Type ")"  .
+	| "(" Type ")" .
 TypeName = identifier | QualifiedIdent .
 TypeSpec = identifier Type .
 UnaryExpr = PrimaryExpr
-	| unary_op UnaryExpr  .
+	| unary_op UnaryExpr .
 VarSpec = IdentifierList (
 		  Type [ "=" ExpressionList ]
-		| "=" ExpressionList 
+		| "=" ExpressionList
 	  ) .

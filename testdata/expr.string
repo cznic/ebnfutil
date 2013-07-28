@@ -13,7 +13,7 @@ Expression = Term {
 			  "^"
 			| "|"
 			| "-"
-			| "+" 
+			| "+"
 		  ) Term
 	  } .
 ExpressionList = Expression { "," Expression } .
@@ -21,17 +21,17 @@ Factor = [
 		  "^"
 		| "!"
 		| "-"
-		| "+" 
+		| "+"
 	  ] Operand .
 Literal = boolean
 	| float
 	| QualifiedIdent
 	| imaginary
 	| integer
-	| str  .
+	| str .
 Operand = Literal
 	| QualifiedIdent "(" [ ExpressionList ] ")"
-	| "(" Expression ")"  .
+	| "(" Expression ")" .
 QualifiedIdent = identifier [ "." identifier ] .
 Start = Expression .
 Term = Factor {
@@ -42,6 +42,6 @@ Term = Factor {
 			| rsh
 			| "%"
 			| "/"
-			| "*" 
+			| "*"
 		  ) Factor
 	  } .

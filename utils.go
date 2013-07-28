@@ -22,12 +22,10 @@ import (
 	"github.com/cznic/strutil"
 )
 
-//TODO _Reduce
-
 var (
 	altA   = map[bool]string{false: "%i\n", true: " "}
 	altT   = map[bool]string{false: "%i\n", true: ""}
-	altZ   = map[bool]string{false: " %u", true: " "}
+	altZ   = map[bool]string{false: "%u", true: ""}
 	altBar = map[bool]string{false: "", true: " |"}
 	grpL   = map[bool]string{false: " (", true: " (\n%i"}
 	grpR   = map[bool]string{false: " )", true: "%u\n  )"}
@@ -35,6 +33,8 @@ var (
 	optR   = map[bool]string{false: " ]", true: "%u\n  ]"}
 	repL   = map[bool]string{false: " {", true: " {\n%i"}
 	repR   = map[bool]string{false: " }", true: "%u\n  }"}
+
+	tests bool // Testing hook
 )
 
 // NormalizeExpression returns a normalized clone of expr. Positions are ignored.
@@ -84,11 +84,19 @@ func NormalizeExpression(expr ebnf.Expression) ebnf.Expression {
 		}
 		return y
 	case ebnf.Sequence:
+		if len(x) == 1 {
+			switch x[0].(type) {
+			case nil:
+				return nil
+			}
+		}
+
 		for stable := false; !stable; {
 			stable = true
 		loop2:
 			for i, v := range x {
-				if a, ok := v.(*ebnf.Group); ok {
+				switch a := v.(type) {
+				case *ebnf.Group:
 					var aa ebnf.Expression
 					for {
 						aa = NormalizeExpression(a.Body)
@@ -111,6 +119,16 @@ func NormalizeExpression(expr ebnf.Expression) ebnf.Expression {
 						break loop2
 					}
 
+				case ebnf.Sequence:
+					y := ebnf.Sequence{}
+					if i > 0 {
+						y = append(y, x[:i]...)
+					}
+					y = append(y, a...)
+					y = append(y, x[i+1:]...)
+					x = y
+					stable = false
+					break loop2
 				}
 			}
 		}
@@ -395,17 +413,8 @@ func (g Grammar) BNF(start string, nameInventor func(name string) string) (r Gra
 	return
 }
 
-// Normalize returns a normalized clone of g. Positions are ignored.
-func (g Grammar) Normalize() (r Grammar) {
-	r = Grammar{}
-	for name, prod := range g {
-		r[name] = NormalizeProduction(prod)
-	}
-	return
-}
-
-// _Reduce attempts to remove productions from g by inlining eligible
-// productions into the places where they are used. For example this grammar:
+// Inline attempts to remove some of the g's productions by inlining them into
+// the places where they are used. For example this grammar:
 //
 //	Start = "0" Abc "9".
 //	Abc = "abc" .
@@ -417,53 +426,50 @@ func (g Grammar) Normalize() (r Grammar) {
 // Eligible productions are non self referential (`P = P | Q .`) non terminals
 // used only once (or unlimited times when all == true).
 //
-// If g is a BNF grammar, it will still be a BNF grammar after _Reduce.
+// If g is a BNF grammar, it will still be a BNF grammar after Inline.
 //
-// Note: If the grammar cannot be reduced, no error is reported.  Comparing the
-// number of productions before and after calling _Reduce can reveal if any
-// reduction was performed.
+// Note: If no productions can be inlined, no error is reported.  Comparing the
+// number of productions before and after calling Inline can reveal if any
+// inlining was performed.
 //
 // 'start' is the name of the start production.
-//
-// Note: For BNF grammars, the term 'reduce' migh be a bit confusing. Consider:
-//
-//	P = "A"
-//	  | "B" .
-//
-// The concept of "reducing" applies only when this grammar is viewed as having
-// only one production - "P", which strictly holds only in the EBNF case. In
-// BNF, the above grammar is the same as (still written in EBNF notation):
-//
-//	P = "A" .
-//	P = "B" .
-//
-// The production P has two rules. _Reduce can make the number of productions
-// names lower, but the number of _rules_ can often grow in the same time.
-//
-// In other words, _Reduce is _not_ a tool to generate minimal grammars.
-func (g Grammar) _Reduce(start string, all bool) (err error) {
+func (g Grammar) Inline(start string, all bool) (err error) {
 	for a, b := -1, len(g); a != b; a, b = b, len(g) {
+		s := []string{}
 		for name := range g {
+			s = append(s, name)
+		}
+		if tests {
+			sort.Strings(s) // Reproducible result for testing
+		}
+		i := 0 //TODO-
+		for _, name := range s {
 			if name == start || !ast.IsExported(name) {
 				continue // lexical
 			}
 
-			if err = g._ReduceOne(name, all); err != nil {
+			if err = g.InlineOne(name, all); err != nil {
 				return
 			}
+
+			//TODO-
+			if i == 1e6 {
+				break
+			}
+			i++
 		}
 	}
 	return
 }
 
-// _ReduceOne attempts to inline production 'name' into all places where it is
+// InlineOne attempts to inline production 'name' into all places where it is
 // used. For example, consider this grammar:
 //
 //	Start = "0" Abc Def "9".
 //	Def = "X" | Abc .
 //	Abc = "abc" .
 //
-// Performing _ReduceOne("Abc"), it becomes:
+// Performing InlineOne("Abc", true), it becomes:
 //
 //	Start = "0" "abc" Def "9" .
 //	Def = "X" | "abc .
@@ -471,7 +477,7 @@ func (g Grammar) _Reduce(start string, all bool) (err error) {
 // Eligible productions are non self referential (`P = P | Q .`) non terminals
 // used only once (or unlimited times when all == true).
 //
-// If g is a BNF grammar, it will still be a BNF grammar after _ReduceOne.
+// If g is a BNF grammar, it will still be a BNF grammar after InlineOne.
 //
 // Consider this EBNF grammar:
 //
@@ -480,7 +486,7 @@ func (g Grammar) _Reduce(start string, all bool) (err error) {
 //	B = "2" | "3" .
 //	C = "4" .
 //
-// Performing _ReduceOne("B", -1) produces this EBNF grammar:
+// Performing InlineOne("B", true) produces this EBNF grammar:
 //
 //	S = A ( "2" | "3" ) ( C | "5" ) .
 //	A = "1" .
@@ -493,27 +499,26 @@ func (g Grammar) _Reduce(start string, all bool) (err error) {
 //	B = "2" | "3" .
 //	C = "4" .
 //
-// Performing _ReduceOne("B", -1) produces this BNF grammar:
+// Performing InlineOne("B", true) produces this BNF grammar:
 //
 //	S = A "2" C | A "3" C .
 //	A = "1" .
 //	C = "4" .
 //
 // Note: If the production cannot be inlined, no error is reported.  Comparing
-// the number of productions before and after calling _ReduceOne can reveal if
-// the inlining was performed.
+// the number of productions before and after calling InlineOne can reveal if
+// inlining was performed.
 //
-// Note: Invoking _ReduceOne for the start production will render the grammar
+// Note: Invoking InlineOne for the start production may render the grammar
 // unusable.
-//
-// Note: Algorithm used is naive, performance of this method is poor.
-func (g Grammar) _ReduceOne(name string, all bool) (err error) {
+func (g Grammar) InlineOne(name string, all bool) (err error) {
+	//TODO Algorithm currently used is naive, performance of this method is poor.
 	if !ast.IsExported(name) {
 		return // lexical
 	}
 
 	rep, err := g.Analyze()
-	if !all && rep.Used[name] > 1 {
+	if !all && rep.Used[name] > 1 || rep.Used[name] == 0 {
 		return
 	}
 
@@ -525,18 +530,150 @@ func (g Grammar) _ReduceOne(name string, all bool) (err error) {
 
 	switch rep.IsBNF {
 	case true:
-		g.reduceBNF(name, rep.UsedBy[name])
+		g.inlineBNF(name, rep.UsedBy[name])
 	default:
-		g.reduceEBNF(name, rep.UsedBy[name])
+		g.inlineEBNF(name, rep.UsedBy[name])
 	}
 	return
 }
 
-func (g Grammar) reduceBNF(what string, where map[string]bool) {
-	panic(fmt.Errorf(".482 %q", what)) //TODO
+func orthogonalBNF(expr0 ebnf.Expression) ebnf.Expression {
+	if expr0 == nil {
+		return ebnf.Alternative{ebnf.Sequence{nil}}
+	}
+
+	var f func(int, ebnf.Expression) ebnf.Expression
+	f = func(lvl int, expr ebnf.Expression) ebnf.Expression {
+		lvl++
+		switch x := expr.(type) {
+		case nil, *ebnf.Token, *ebnf.Range, *ebnf.Name:
+			switch lvl {
+			case 2:
+				return ebnf.Sequence{x}
+			default:
+				return x
+			}
+		case ebnf.Alternative:
+			switch lvl {
+			case 1:
+				y := ebnf.Alternative{}
+				for _, v := range x {
+					y = append(y, f(lvl, v))
+				}
+				return y
+			default:
+				panic(fmt.Sprintf("internal error %d %T(%v)", lvl, x, x))
+			}
+		case ebnf.Sequence:
+			switch lvl {
+			case 1:
+				return ebnf.Alternative{f(lvl, x)}
+			default:
+				y := ebnf.Sequence{}
+				for _, v := range x {
+					switch vv := v.(type) {
+					case *ebnf.Name, *ebnf.Token:
+						y = append(y, v)
+					default:
+						dbg("otrho input:\n%s", Grammar(nil).dstr(expr0))
+						dbg("%s", Grammar(nil).dstr(x))
+						panic(fmt.Sprintf("internal error %d %T(%v)", lvl, vv, vv))
+					}
+				}
+				return y
+			}
+		default:
+			panic(fmt.Sprintf("internal error %d %T(%v)", lvl, x, x))
+		}
+	}
+	return f(0, expr0)
 }
 
-func (g Grammar) reduceEBNF(what string, where map[string]bool) {
+func (g Grammar) inlineBNF(what string, where map[string]bool) {
+	dbg("inlineBNF %q", what)
+	dbg("%s", g.dstr(g[what]))
+	inline := orthogonalBNF(g[what].Expr).(ebnf.Alternative)
+	for name := range where {
+		dbg("into %q", name)
+		var f func(ebnf.Expression) ebnf.Expression
+		f = func(expr ebnf.Expression) ebnf.Expression {
+			switch x := expr.(type) {
+			case nil:
+				return nil
+			case ebnf.Alternative:
+				y := ebnf.Alternative{}
+				for _, v := range x {
+					fv := f(v)
+					switch vv := fv.(type) {
+					case ebnf.Alternative:
+						y = append(y, vv...)
+					case ebnf.Sequence:
+						y = append(y, vv)
+					default:
+						panic(fmt.Sprintf("internal error %T(%v)", vv, vv))
+					}
+				}
+				return y
+			case ebnf.Sequence:
+				if len(x) == 0 {
+					return x
+				}
+
+				in := ebnf.Alternative{x}
+				out := ebnf.Alternative{}
+				for len(in) != 0 {
+					seq := in[0].(ebnf.Sequence)
+					in = in[1:]
+					i := -1
+				search:
+					for j, v := range seq {
+						if x, ok := v.(*ebnf.Name); ok && x.String == what {
+							i = j
+							break search
+						}
+					}
+					switch {
+					case i >= 0:
+						switch {
+						case len(inline) == 1: //TODO join w/ below
+							y := ebnf.Sequence{}
+							if i > 0 {
+								y = append(y, seq[:i])
+							}
+							y = append(y, inline[0].(ebnf.Sequence)...)
+							y = append(y, seq[i+1:]...)
+							in = append(in, y)
+						default:
+							for _, v := range inline {
+								y := ebnf.Sequence{}
+								if i > 0 {
+									y = append(y, seq[:i])
+								}
+								y = append(y, v.(ebnf.Sequence)...)
+								y = append(y, seq[i+1:]...)
+								in = append(in, y)
+							}
+						}
+					default:
+						out = append(out, seq)
+					}
+				}
+				switch {
+				case len(out) == 1:
+					return out[0]
+				default:
+					return out
+				}
+			default:
+				panic(fmt.Sprintf("internal error %T(%v)", x, x))
+			}
+		}
+		g[name].Expr = NormalizeExpression(f(orthogonalBNF(g[name].Expr)))
+	}
+	delete(g, what)
+}
+
+func (g Grammar) inlineEBNF(what string, where map[string]bool) {
 	for name := range where {
 		var f func(*ebnf.Expression)
 		f = func(expr *ebnf.Expression) {
@@ -571,25 +708,21 @@ func (g Grammar) reduceEBNF(what string, where map[string]bool) {
 		}
 		prod := g[name]
 		f(&prod.Expr)
-		prod.Expr = NormalizeExpression(prod.Expr) // normalize
+		prod.Expr = NormalizeExpression(prod.Expr)
 	}
 	delete(g, what)
 }
 
-// String implements fmt.Stringer.
-func (g Grammar) String() string {
-	term, nterm := []string{}, []string{}
-	for name := range g {
-		if ast.IsExported(name) {
-			nterm = append(nterm, name)
-			continue
-		}
-
-		term = append(term, name)
+// Normalize returns a normalized clone of g. Positions are ignored.
+func (g Grammar) Normalize() (r Grammar) {
+	r = Grammar{}
+	for name, prod := range g {
+		r[name] = NormalizeProduction(prod)
 	}
-	sort.Strings(nterm)
-	sort.Strings(term)
+	return
+}
 
+func (g Grammar) str(expr ebnf.Expression) string {
 	var buf bytes.Buffer
 	f := strutil.IndentFormatter(&buf, "\t")
 
@@ -660,15 +793,36 @@ func (g Grammar) String() string {
 		}
 	}
 
+	h(expr, false, false)
+	return buf.String()
+}
+
+// String implements fmt.Stringer.
+func (g Grammar) String() string {
+	term, nterm := []string{}, []string{}
+	for name := range g {
+		if ast.IsExported(name) {
+			nterm = append(nterm, name)
+			continue
+		}
+
+		term = append(term, name)
+	}
+	sort.Strings(nterm)
+	sort.Strings(term)
+
+	a := []string{}
 	for _, name := range term {
-		h(g[name], false, false)
+		a = append(a, g.str(g[name]))
 	}
 
-	f.Format("\n")
-	for _, name := range nterm {
-		h(g[name], false, false)
+	if len(term) != 0 {
+		a = append(a, "\n")
 	}
-	return buf.String()
+	for _, name := range nterm {
+		a = append(a, g.str(g[name]))
+	}
+	return strings.Join(a, "")
 }
 
 // Verify checks that:

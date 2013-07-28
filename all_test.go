@@ -14,6 +14,9 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"code.google.com/p/go.exp/ebnf"
+	"github.com/cznic/strutil"
 )
 
 func dbg(s string, va ...interface{}) {
@@ -47,33 +50,92 @@ func init() {
 	if len(testfiles) == 0 {
 		panic("internal error: missing testdata")
 	}
+
+	tests = true
 }
 
+func (g Grammar) dstr(expr ebnf.Expression) string {
+	var buf bytes.Buffer
+	f := strutil.IndentFormatter(&buf, "\t")
+
+	var h func(ebnf.Expression)
+	h = func(expr ebnf.Expression) {
+		switch x := expr.(type) {
+		case nil:
+			f.Format(" <nil>")
+		case *ebnf.Production:
+			name := x.Name.String
+			f.Format("%s =%i", name)
+			h(g[name].Expr)
+			f.Format(" .%u\n")
+		case ebnf.Alternative:
+			for i, v := range x {
+				switch {
+				case i == 0:
+					f.Format(" <A>%i\n")
+				default:
+					f.Format("\n|")
+				}
+				h(v)
+			}
+			f.Format("</A>%u")
+		case ebnf.Sequence:
+			f.Format(" <S>")
+			for _, v := range x {
+				h(v)
+			}
+			f.Format("</S>")
+		case *ebnf.Group:
+			f.Format(" (%i\n")
+			h(x.Body)
+			f.Format("%u\n)")
+		case *ebnf.Option:
+			f.Format(" [%i\n")
+			h(x.Body)
+			f.Format("%u\n]")
+		case *ebnf.Repetition:
+			f.Format(" {%i\n")
+			h(x.Body)
+			f.Format("%u\n}")
+		case *ebnf.Token:
+			f.Format(" %q", x.String)
+		case *ebnf.Name:
+			f.Format(" %s", x.String)
+		case *ebnf.Range:
+			f.Format(" %q … %q", x.Begin.String, x.End.String)
+		default:
+			panic(fmt.Sprintf("internal error %T(%v)", x, x))
+		}
+	}
+
+	h(expr)
+	return buf.String()
+}
 func TestString(t *testing.T) {
 	for i, fname := range testfiles {
 		fname = filepath.Join(testdata, fname)
 		bsrc, err := ioutil.ReadFile(fname)
 		if err != nil {
-			t.Errorf("%d/%d %v", i, len(testfiles), err)
+			t.Error(err)
 			continue
 		}
 
 		src := bytes.NewBuffer(bsrc)
 		g, err := Parse(fname, src)
 		if err != nil {
-			t.Errorf("%d/%d %v", i, len(testfiles), err)
+			t.Error(err)
 			continue
 		}
 
 		sname := fname[:len(fname)-len(".ebnf")] + ".string"
 		ref, err := ioutil.ReadFile(sname)
 		if err != nil {
-			t.Errorf("%d/%d %v", i, len(testfiles), err)
+			t.Error(err)
 			continue
 		}
 
 		if g, e := g.String(), string(ref); g != e {
-			t.Errorf("%d/%d\n----\ngot:\n%s\n----\nexp:\n%s", i, len(testfiles), g, e)
+			t.Errorf("----\ngot:\n%s\n----\nexp:\n%s", g, e)
 			continue
 		}
 
@@ -153,32 +215,32 @@ func TestAnalyze(t *testing.T) {
 		fname = filepath.Join(testdata, fname)
 		bsrc, err := ioutil.ReadFile(fname)
 		if err != nil {
-			t.Errorf("%d/%d %v", i, len(testfiles), err)
+			t.Error(err)
 			continue
 		}
 
 		src := bytes.NewBuffer(bsrc)
 		g, err := Parse(fname, src)
 		if err != nil {
-			t.Errorf("%d/%d %v", i, len(testfiles), err)
+			t.Error(err)
 			continue
 		}
 
 		sname := fname[:len(fname)-len(".ebnf")] + ".report"
 		ref, err := ioutil.ReadFile(sname)
 		if err != nil {
-			t.Errorf("%d/%d %v", i, len(testfiles), err)
+			t.Error(err)
 			continue
 		}
 
 		r, err := g.Analyze()
 		if err != nil {
-			t.Errorf("%d/%d %v", i, len(testfiles), err)
+			t.Error(err)
 			continue
 		}
 
 		if g, e := r.String(), string(ref); g != e {
-			t.Errorf("%d/%d\n----\ngot:\n%s\n----\nexp:\n%s", i, len(testfiles), g, e)
+			t.Errorf("----\ngot:\n%s\n----\nexp:\n%s", g, e)
 			continue
 		}
 
@@ -213,7 +275,7 @@ func TestBNF0(t *testing.T) {
 			`S = [ "a" ] .`,
 			`S = S_1 .
 			S_1 = 
-				| "a"  .`,
+				| "a" .`,
 		},
 		{
 			`S = A .
@@ -225,7 +287,7 @@ func TestBNF0(t *testing.T) {
 			`S = { "a" } .`,
 			`S = S_1 .
 			S_1 = 
-				| S_1 "a"  .`,
+				| S_1 "a" .`,
 		},
 		{
 			`S = "0" … "9" .`,
@@ -268,14 +330,14 @@ func TestBNF1(t *testing.T) {
 		fname = filepath.Join(testdata, fname)
 		bsrc, err := ioutil.ReadFile(fname)
 		if err != nil {
-			t.Errorf("%d/%d %v", i, len(testfiles), err)
+			t.Error(err)
 			continue
 		}
 
 		src := bytes.NewBuffer(bsrc)
 		g, err := Parse(fname, src)
 		if err != nil {
-			t.Errorf("%d/%d %v", i, len(testfiles), err)
+			t.Error(err)
 			continue
 		}
 
@@ -284,11 +346,21 @@ func TestBNF1(t *testing.T) {
 			continue
 		}
 
-		var i int
 		g, _, err = g.BNF("Start", nil)
-
 		if err != nil {
 			t.Error(i, err)
+			continue
+		}
+
+		sname := fname + ".bnf"
+		ref, err := ioutil.ReadFile(sname)
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+
+		if g, e := g.String(), string(ref); g != e {
+			t.Errorf("n----\ngot:\n%s\n----\nexp:\n%s", g, e)
 			continue
 		}
 
@@ -296,19 +368,19 @@ func TestBNF1(t *testing.T) {
 	}
 }
 
-func TestClone(t *testing.T) {
+func TestNormalize(t *testing.T) {
 	for i, fname := range testfiles {
 		fname = filepath.Join(testdata, fname)
 		bsrc, err := ioutil.ReadFile(fname)
 		if err != nil {
-			t.Errorf("%d/%d %v", i, len(testfiles), err)
+			t.Error(err)
 			continue
 		}
 
 		src := bytes.NewBuffer(bsrc)
 		g, err := Parse(fname, src)
 		if err != nil {
-			t.Errorf("%d/%d %v", i, len(testfiles), err)
+			t.Error(err)
 			continue
 		}
 
@@ -324,57 +396,61 @@ func TestClone(t *testing.T) {
 	}
 }
 
-func TestReduceEBNF0(t *testing.T) {
+func TestInlineEBNF0(t *testing.T) {
 	table := []struct {
 		src string
 		all bool
 		exp string
 	}{
 		{
-			`S = R | "0"  | "1" .
+			`S = R | "0" | "1" .
 			R = "A" | "Z" .
 			Ebnf = ( "E" | "F" ) .`,
 			false,
-			`S = "A"
+			`Ebnf = ( "E" | "F" ) .
+			S = "A"
 				| "Z"
 				| "0"
-				| "1"  .`,
+				| "1" .`,
 		},
 		{
 			`S = "0" | R | "1" .
 			R = "A" | "Z" .
 			Ebnf = ( "E" | "F" ) .`,
 			false,
-			`S = "0"
+			`Ebnf = ( "E" | "F" ) .
+			S = "0"
 				| "A"
 				| "Z"
-				| "1"  .`,
+				| "1" .`,
 		},
 		{
 			`S = "0" | "1" | R .
 			R = "A" | "Z" .
 			Ebnf = ( "E" | "F" ) .`,
 			false,
-			`S = "0"
+			`Ebnf = ( "E" | "F" ) .
+			S = "0"
 				| "1"
 				| "A"
-				| "Z"  .`,
+				| "Z" .`,
 		},
 		{
 			`S = "0" | One | "2" .
 			One = ( "f" "function" ) .
 			Ebnf = ( "E" | "F" ) .`,
 			false,
-			`S = "0"
+			`Ebnf = ( "E" | "F" ) .
+			S = "0"
 				| "f" "function"
-				| "2"  .`,
+				| "2" .`,
 		},
 		{
 			`Empty = .
 			S = Empty | { "1" "2" } .`,
 			false,
 			`S =
-				| { "1" "2" }  .`,
+				| { "1" "2" } .`,
 		},
 		{
 			`S = "A" B .
@@ -391,7 +467,7 @@ func TestReduceEBNF0(t *testing.T) {
 		}
 
 		g2 := g.Normalize()
-		if err := g2._Reduce("S", test.all); err != nil {
+		if err := g2.Inline("S", test.all); err != nil {
 			t.Error(i, err)
 			continue
 		}
@@ -403,25 +479,24 @@ func TestReduceEBNF0(t *testing.T) {
 	}
 }
 
-func TestReduceEBNF(t *testing.T) {
+func TestInlineEBNF(t *testing.T) {
 	for i, fname := range testfiles {
-
 		fname = filepath.Join(testdata, fname)
 		bsrc, err := ioutil.ReadFile(fname)
 		if err != nil {
-			t.Errorf("%d/%d %v", i, len(testfiles), err)
+			t.Error(err)
 			continue
 		}
 
 		src := bytes.NewBuffer(bsrc)
 		g, err := Parse(fname, src)
 		if err != nil {
-			t.Errorf("%d/%d %v", i, len(testfiles), err)
+			t.Error(err)
 			continue
 		}
 
 		g2 := g.Normalize()
-		if err = g2._Reduce("Start", false); err != nil {
+		if err = g2.Inline("Start", false); err != nil {
 			t.Error(i, err)
 			continue
 		}
@@ -429,12 +504,135 @@ func TestReduceEBNF(t *testing.T) {
 		sname := fname + ".reduced"
 		ref, err := ioutil.ReadFile(sname)
 		if err != nil {
-			t.Errorf("%d/%d %v", i, len(testfiles), err)
+			t.Error(err)
 			continue
 		}
 
 		if g, e := g2.String(), string(ref); g != e {
-			t.Errorf("%d/%d\n----\ngot:\n%s\n----\nexp:\n%s", i, len(testfiles), g, e)
+			t.Errorf("----\ngot:\n%s\n----\nexp:\n%s", g, e)
+			continue
+		}
+
+		t.Log(i, fname)
+	}
+}
+
+func TestInlineBNF0(t *testing.T) {
+	table := []struct {
+		src string
+		all bool
+		exp string
+	}{
+		{
+			`S = R | "0" | "1" .
+			R = "A" | "Z" .`,
+			false,
+			`S = "A"
+				| "Z"
+				| "0"
+				| "1" .`,
+		},
+		{
+			`S = "0" | R | "1" .
+			R = "A" | "Z" .`,
+			false,
+			`S = "0"
+				| "A"
+				| "Z"
+				| "1" .`,
+		},
+		{
+			`S = "0" | "1" | R .
+			R = "A" | "Z" .`,
+			false,
+			`S = "0"
+				| "1"
+				| "A"
+				| "Z" .`,
+		},
+		{
+			`S = "0" | One | "2" .
+			One = "f" "function" .`,
+			false,
+			`S = "0"
+				| "f" "function"
+				| "2" .`,
+		},
+		{
+			`Empty = .
+			S = Empty | "1" "2" .`,
+			false,
+			`S =
+				| "1" "2" .`,
+		},
+		{
+			`S = "A" B .
+			B = "B" "C" .`,
+			false,
+			`S = "A" "B" "C" .`,
+		},
+	}
+	for i, test := range table {
+		g, err := Parse(fmt.Sprintf("f%d", i), strings.NewReader(test.src))
+		if err != nil {
+			t.Error(i, err)
+			continue
+		}
+
+		g2 := g.Normalize()
+		if err := g2.Inline("S", test.all); err != nil {
+			t.Error(i, err)
+			continue
+		}
+
+		if g, e := g2.String(), test.exp; trimx(g) != trimx(e) {
+			t.Errorf("----\ng:\n%s\n----\ne:\n%s", g, e)
+		}
+
+	}
+}
+
+func TestInlineBNF(t *testing.T) {
+	for i, fname := range testfiles {
+		if fname != "expr.ebnf" { //TODO-
+			continue
+		}
+
+		fname = filepath.Join(testdata, fname)
+		bsrc, err := ioutil.ReadFile(fname)
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+
+		src := bytes.NewBuffer(bsrc)
+		g0, err := Parse(fname, src)
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+
+		g1, _, err := g0.BNF("Start", nil)
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+
+		g2 := g1.Normalize()
+		if err = g2.Inline("Start", false); err != nil {
+			t.Error(i, err)
+			continue
+		}
+
+		sname := fname + ".bnf.reduced"
+		ref, err := ioutil.ReadFile(sname)
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+
+		if g, e := g2.String(), string(ref); g != e {
+			t.Errorf("----\nsrc0\n%s\n----\nsrc:\n%s\n----\ngot:\n%s\n----\nexp:\n%s", g0, g1, g2, e)
 			continue
 		}
 
