@@ -8,7 +8,7 @@
 // Positions attached to particular ebnf package types instances are ignored in
 // most, if not all places. Positions make sense after Parse, but usually no
 // more after mutating the grammar in any way.
-package ebnfutils
+package ebnfutil
 
 import (
 	"bytes"
