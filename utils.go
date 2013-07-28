@@ -204,9 +204,14 @@ func Parse(filename string, src io.Reader) (g Grammar, err error) {
 // Analyze analyzes g with starting production 'start' and returns a Report
 // about it.
 //
+// If start == "" then all of the grammar productions are considered.
+//
+// If start != "" then only productions reachable from the start production are
+// considered. Additionally, analysis stop at the token level.
+//
 // Note: The grammar should be verified before invoking this method. Otherwise
 // errors may occur.
-func (g Grammar) Analyze() (r *Report, err error) {
+func (g Grammar) Analyze(start string) (r *Report, err error) {
 	seen := map[string]bool{}
 	var f func(string, ebnf.Expression)
 	f = func(name string, expr ebnf.Expression) {
@@ -258,6 +263,9 @@ func (g Grammar) Analyze() (r *Report, err error) {
 			r.UsedBy[name2][name] = true
 			if ast.IsExported(name) && !ast.IsExported(name2) {
 				r.Tokens[name2] = true
+				if start != "" {
+					return
+				}
 			}
 			f(name2, g[name2])
 		case *ebnf.Token:
@@ -282,8 +290,13 @@ func (g Grammar) Analyze() (r *Report, err error) {
 	for name := range g {
 		r.UsedBy[name] = map[string]bool{}
 	}
-	for name := range g {
-		f(name, g[name])
+	switch {
+	case start == "":
+		for name := range g {
+			f(name, g[name])
+		}
+	default:
+		f(start, g[start])
 	}
 	return
 }
@@ -510,7 +523,7 @@ func (g Grammar) InlineOne(name string, all bool) (err error) {
 		return // lexical
 	}
 
-	rep, err := g.Analyze()
+	rep, err := g.Analyze("")
 	if !all && rep.Used[name] > 1 || rep.Used[name] == 0 {
 		return
 	}

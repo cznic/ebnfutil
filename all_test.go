@@ -199,7 +199,7 @@ func TestIsBNF(t *testing.T) {
 			continue
 		}
 
-		rep, err := g.Analyze()
+		rep, err := g.Analyze("")
 		if err != nil {
 			t.Error(i, err)
 			continue
@@ -234,7 +234,7 @@ func TestAnalyze(t *testing.T) {
 			continue
 		}
 
-		r, err := g.Analyze()
+		r, err := g.Analyze("")
 		if err != nil {
 			t.Error(err)
 			continue
