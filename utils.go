@@ -618,25 +618,14 @@ func (g Grammar) inlineBNF(what string, where map[string]bool) {
 					}
 					switch {
 					case i >= 0:
-						switch {
-						case len(inline) == 1: //TODO join w/ below
+						for _, v := range inline {
 							y := ebnf.Sequence{}
 							if i > 0 {
 								y = append(y, seq[:i])
 							}
-							y = append(y, inline[0].(ebnf.Sequence)...)
+							y = append(y, v.(ebnf.Sequence)...)
 							y = append(y, seq[i+1:]...)
 							in = append(in, y)
-						default:
-							for _, v := range inline {
-								y := ebnf.Sequence{}
-								if i > 0 {
-									y = append(y, seq[:i])
-								}
-								y = append(y, v.(ebnf.Sequence)...)
-								y = append(y, seq[i+1:]...)
-								in = append(in, y)
-							}
 						}
 					default:
 						out = append(out, seq)
