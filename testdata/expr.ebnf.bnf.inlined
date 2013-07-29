@@ -1,0 +1,499 @@
+andnot = "&^" .
+boolean = "true" | "false" .
+float = .
+identifier = .
+imaginary = .
+integer = .
+lsh = "<<" .
+rsh = ">>" .
+str = .
+
+ExpressionList_1 =
+	| ExpressionList_1 "," Term Expression_1 .
+Expression_1 =
+	| Expression_1 "^" Term
+	| Expression_1 "|" Term
+	| Expression_1 "-" Term
+	| Expression_1 "+" Term .
+Start = Term Expression_1 .
+Term = boolean Term_1
+	| float Term_1
+	| identifier Term_1
+	| identifier "." identifier Term_1
+	| imaginary Term_1
+	| integer Term_1
+	| str Term_1
+	| identifier "(" ")" Term_1
+	| identifier "." identifier "(" ")" Term_1
+	| identifier "(" Term Expression_1 ExpressionList_1 ")" Term_1
+	| identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")" Term_1
+	| "(" Term Expression_1 ")" Term_1
+	| "^" boolean Term_1
+	| "^" float Term_1
+	| "^" identifier Term_1
+	| "^" identifier "." identifier Term_1
+	| "^" imaginary Term_1
+	| "^" integer Term_1
+	| "^" str Term_1
+	| "^" identifier "(" ")" Term_1
+	| "^" identifier "." identifier "(" ")" Term_1
+	| "^" identifier "(" Term Expression_1 ExpressionList_1 ")" Term_1
+	| "^" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")" Term_1
+	| "^" "(" Term Expression_1 ")" Term_1
+	| "!" boolean Term_1
+	| "!" float Term_1
+	| "!" identifier Term_1
+	| "!" identifier "." identifier Term_1
+	| "!" imaginary Term_1
+	| "!" integer Term_1
+	| "!" str Term_1
+	| "!" identifier "(" ")" Term_1
+	| "!" identifier "." identifier "(" ")" Term_1
+	| "!" identifier "(" Term Expression_1 ExpressionList_1 ")" Term_1
+	| "!" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")" Term_1
+	| "!" "(" Term Expression_1 ")" Term_1
+	| "-" boolean Term_1
+	| "-" float Term_1
+	| "-" identifier Term_1
+	| "-" identifier "." identifier Term_1
+	| "-" imaginary Term_1
+	| "-" integer Term_1
+	| "-" str Term_1
+	| "-" identifier "(" ")" Term_1
+	| "-" identifier "." identifier "(" ")" Term_1
+	| "-" identifier "(" Term Expression_1 ExpressionList_1 ")" Term_1
+	| "-" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")" Term_1
+	| "-" "(" Term Expression_1 ")" Term_1
+	| "+" boolean Term_1
+	| "+" float Term_1
+	| "+" identifier Term_1
+	| "+" identifier "." identifier Term_1
+	| "+" imaginary Term_1
+	| "+" integer Term_1
+	| "+" str Term_1
+	| "+" identifier "(" ")" Term_1
+	| "+" identifier "." identifier "(" ")" Term_1
+	| "+" identifier "(" Term Expression_1 ExpressionList_1 ")" Term_1
+	| "+" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")" Term_1
+	| "+" "(" Term Expression_1 ")" Term_1 .
+Term_1 =
+	| Term_1 andnot boolean
+	| Term_1 "&" boolean
+	| Term_1 lsh boolean
+	| Term_1 rsh boolean
+	| Term_1 "%" boolean
+	| Term_1 "/" boolean
+	| Term_1 "*" boolean
+	| Term_1 andnot float
+	| Term_1 "&" float
+	| Term_1 lsh float
+	| Term_1 rsh float
+	| Term_1 "%" float
+	| Term_1 "/" float
+	| Term_1 "*" float
+	| Term_1 andnot identifier
+	| Term_1 "&" identifier
+	| Term_1 lsh identifier
+	| Term_1 rsh identifier
+	| Term_1 "%" identifier
+	| Term_1 "/" identifier
+	| Term_1 "*" identifier
+	| Term_1 andnot identifier "." identifier
+	| Term_1 "&" identifier "." identifier
+	| Term_1 lsh identifier "." identifier
+	| Term_1 rsh identifier "." identifier
+	| Term_1 "%" identifier "." identifier
+	| Term_1 "/" identifier "." identifier
+	| Term_1 "*" identifier "." identifier
+	| Term_1 andnot imaginary
+	| Term_1 "&" imaginary
+	| Term_1 lsh imaginary
+	| Term_1 rsh imaginary
+	| Term_1 "%" imaginary
+	| Term_1 "/" imaginary
+	| Term_1 "*" imaginary
+	| Term_1 andnot integer
+	| Term_1 "&" integer
+	| Term_1 lsh integer
+	| Term_1 rsh integer
+	| Term_1 "%" integer
+	| Term_1 "/" integer
+	| Term_1 "*" integer
+	| Term_1 andnot str
+	| Term_1 "&" str
+	| Term_1 lsh str
+	| Term_1 rsh str
+	| Term_1 "%" str
+	| Term_1 "/" str
+	| Term_1 "*" str
+	| Term_1 andnot identifier "(" ")"
+	| Term_1 "&" identifier "(" ")"
+	| Term_1 lsh identifier "(" ")"
+	| Term_1 rsh identifier "(" ")"
+	| Term_1 "%" identifier "(" ")"
+	| Term_1 "/" identifier "(" ")"
+	| Term_1 "*" identifier "(" ")"
+	| Term_1 andnot identifier "." identifier "(" ")"
+	| Term_1 "&" identifier "." identifier "(" ")"
+	| Term_1 lsh identifier "." identifier "(" ")"
+	| Term_1 rsh identifier "." identifier "(" ")"
+	| Term_1 "%" identifier "." identifier "(" ")"
+	| Term_1 "/" identifier "." identifier "(" ")"
+	| Term_1 "*" identifier "." identifier "(" ")"
+	| Term_1 andnot identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "&" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 lsh identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 rsh identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "%" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "/" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "*" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 andnot identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "&" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 lsh identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 rsh identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "%" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "/" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "*" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 andnot "(" Term Expression_1 ")"
+	| Term_1 "&" "(" Term Expression_1 ")"
+	| Term_1 lsh "(" Term Expression_1 ")"
+	| Term_1 rsh "(" Term Expression_1 ")"
+	| Term_1 "%" "(" Term Expression_1 ")"
+	| Term_1 "/" "(" Term Expression_1 ")"
+	| Term_1 "*" "(" Term Expression_1 ")"
+	| Term_1 andnot "^" boolean
+	| Term_1 "&" "^" boolean
+	| Term_1 lsh "^" boolean
+	| Term_1 rsh "^" boolean
+	| Term_1 "%" "^" boolean
+	| Term_1 "/" "^" boolean
+	| Term_1 "*" "^" boolean
+	| Term_1 andnot "^" float
+	| Term_1 "&" "^" float
+	| Term_1 lsh "^" float
+	| Term_1 rsh "^" float
+	| Term_1 "%" "^" float
+	| Term_1 "/" "^" float
+	| Term_1 "*" "^" float
+	| Term_1 andnot "^" identifier
+	| Term_1 "&" "^" identifier
+	| Term_1 lsh "^" identifier
+	| Term_1 rsh "^" identifier
+	| Term_1 "%" "^" identifier
+	| Term_1 "/" "^" identifier
+	| Term_1 "*" "^" identifier
+	| Term_1 andnot "^" identifier "." identifier
+	| Term_1 "&" "^" identifier "." identifier
+	| Term_1 lsh "^" identifier "." identifier
+	| Term_1 rsh "^" identifier "." identifier
+	| Term_1 "%" "^" identifier "." identifier
+	| Term_1 "/" "^" identifier "." identifier
+	| Term_1 "*" "^" identifier "." identifier
+	| Term_1 andnot "^" imaginary
+	| Term_1 "&" "^" imaginary
+	| Term_1 lsh "^" imaginary
+	| Term_1 rsh "^" imaginary
+	| Term_1 "%" "^" imaginary
+	| Term_1 "/" "^" imaginary
+	| Term_1 "*" "^" imaginary
+	| Term_1 andnot "^" integer
+	| Term_1 "&" "^" integer
+	| Term_1 lsh "^" integer
+	| Term_1 rsh "^" integer
+	| Term_1 "%" "^" integer
+	| Term_1 "/" "^" integer
+	| Term_1 "*" "^" integer
+	| Term_1 andnot "^" str
+	| Term_1 "&" "^" str
+	| Term_1 lsh "^" str
+	| Term_1 rsh "^" str
+	| Term_1 "%" "^" str
+	| Term_1 "/" "^" str
+	| Term_1 "*" "^" str
+	| Term_1 andnot "^" identifier "(" ")"
+	| Term_1 "&" "^" identifier "(" ")"
+	| Term_1 lsh "^" identifier "(" ")"
+	| Term_1 rsh "^" identifier "(" ")"
+	| Term_1 "%" "^" identifier "(" ")"
+	| Term_1 "/" "^" identifier "(" ")"
+	| Term_1 "*" "^" identifier "(" ")"
+	| Term_1 andnot "^" identifier "." identifier "(" ")"
+	| Term_1 "&" "^" identifier "." identifier "(" ")"
+	| Term_1 lsh "^" identifier "." identifier "(" ")"
+	| Term_1 rsh "^" identifier "." identifier "(" ")"
+	| Term_1 "%" "^" identifier "." identifier "(" ")"
+	| Term_1 "/" "^" identifier "." identifier "(" ")"
+	| Term_1 "*" "^" identifier "." identifier "(" ")"
+	| Term_1 andnot "^" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "&" "^" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 lsh "^" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 rsh "^" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "%" "^" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "/" "^" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "*" "^" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 andnot "^" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "&" "^" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 lsh "^" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 rsh "^" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "%" "^" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "/" "^" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "*" "^" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 andnot "^" "(" Term Expression_1 ")"
+	| Term_1 "&" "^" "(" Term Expression_1 ")"
+	| Term_1 lsh "^" "(" Term Expression_1 ")"
+	| Term_1 rsh "^" "(" Term Expression_1 ")"
+	| Term_1 "%" "^" "(" Term Expression_1 ")"
+	| Term_1 "/" "^" "(" Term Expression_1 ")"
+	| Term_1 "*" "^" "(" Term Expression_1 ")"
+	| Term_1 andnot "!" boolean
+	| Term_1 "&" "!" boolean
+	| Term_1 lsh "!" boolean
+	| Term_1 rsh "!" boolean
+	| Term_1 "%" "!" boolean
+	| Term_1 "/" "!" boolean
+	| Term_1 "*" "!" boolean
+	| Term_1 andnot "!" float
+	| Term_1 "&" "!" float
+	| Term_1 lsh "!" float
+	| Term_1 rsh "!" float
+	| Term_1 "%" "!" float
+	| Term_1 "/" "!" float
+	| Term_1 "*" "!" float
+	| Term_1 andnot "!" identifier
+	| Term_1 "&" "!" identifier
+	| Term_1 lsh "!" identifier
+	| Term_1 rsh "!" identifier
+	| Term_1 "%" "!" identifier
+	| Term_1 "/" "!" identifier
+	| Term_1 "*" "!" identifier
+	| Term_1 andnot "!" identifier "." identifier
+	| Term_1 "&" "!" identifier "." identifier
+	| Term_1 lsh "!" identifier "." identifier
+	| Term_1 rsh "!" identifier "." identifier
+	| Term_1 "%" "!" identifier "." identifier
+	| Term_1 "/" "!" identifier "." identifier
+	| Term_1 "*" "!" identifier "." identifier
+	| Term_1 andnot "!" imaginary
+	| Term_1 "&" "!" imaginary
+	| Term_1 lsh "!" imaginary
+	| Term_1 rsh "!" imaginary
+	| Term_1 "%" "!" imaginary
+	| Term_1 "/" "!" imaginary
+	| Term_1 "*" "!" imaginary
+	| Term_1 andnot "!" integer
+	| Term_1 "&" "!" integer
+	| Term_1 lsh "!" integer
+	| Term_1 rsh "!" integer
+	| Term_1 "%" "!" integer
+	| Term_1 "/" "!" integer
+	| Term_1 "*" "!" integer
+	| Term_1 andnot "!" str
+	| Term_1 "&" "!" str
+	| Term_1 lsh "!" str
+	| Term_1 rsh "!" str
+	| Term_1 "%" "!" str
+	| Term_1 "/" "!" str
+	| Term_1 "*" "!" str
+	| Term_1 andnot "!" identifier "(" ")"
+	| Term_1 "&" "!" identifier "(" ")"
+	| Term_1 lsh "!" identifier "(" ")"
+	| Term_1 rsh "!" identifier "(" ")"
+	| Term_1 "%" "!" identifier "(" ")"
+	| Term_1 "/" "!" identifier "(" ")"
+	| Term_1 "*" "!" identifier "(" ")"
+	| Term_1 andnot "!" identifier "." identifier "(" ")"
+	| Term_1 "&" "!" identifier "." identifier "(" ")"
+	| Term_1 lsh "!" identifier "." identifier "(" ")"
+	| Term_1 rsh "!" identifier "." identifier "(" ")"
+	| Term_1 "%" "!" identifier "." identifier "(" ")"
+	| Term_1 "/" "!" identifier "." identifier "(" ")"
+	| Term_1 "*" "!" identifier "." identifier "(" ")"
+	| Term_1 andnot "!" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "&" "!" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 lsh "!" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 rsh "!" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "%" "!" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "/" "!" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "*" "!" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 andnot "!" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "&" "!" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 lsh "!" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 rsh "!" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "%" "!" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "/" "!" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "*" "!" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 andnot "!" "(" Term Expression_1 ")"
+	| Term_1 "&" "!" "(" Term Expression_1 ")"
+	| Term_1 lsh "!" "(" Term Expression_1 ")"
+	| Term_1 rsh "!" "(" Term Expression_1 ")"
+	| Term_1 "%" "!" "(" Term Expression_1 ")"
+	| Term_1 "/" "!" "(" Term Expression_1 ")"
+	| Term_1 "*" "!" "(" Term Expression_1 ")"
+	| Term_1 andnot "-" boolean
+	| Term_1 "&" "-" boolean
+	| Term_1 lsh "-" boolean
+	| Term_1 rsh "-" boolean
+	| Term_1 "%" "-" boolean
+	| Term_1 "/" "-" boolean
+	| Term_1 "*" "-" boolean
+	| Term_1 andnot "-" float
+	| Term_1 "&" "-" float
+	| Term_1 lsh "-" float
+	| Term_1 rsh "-" float
+	| Term_1 "%" "-" float
+	| Term_1 "/" "-" float
+	| Term_1 "*" "-" float
+	| Term_1 andnot "-" identifier
+	| Term_1 "&" "-" identifier
+	| Term_1 lsh "-" identifier
+	| Term_1 rsh "-" identifier
+	| Term_1 "%" "-" identifier
+	| Term_1 "/" "-" identifier
+	| Term_1 "*" "-" identifier
+	| Term_1 andnot "-" identifier "." identifier
+	| Term_1 "&" "-" identifier "." identifier
+	| Term_1 lsh "-" identifier "." identifier
+	| Term_1 rsh "-" identifier "." identifier
+	| Term_1 "%" "-" identifier "." identifier
+	| Term_1 "/" "-" identifier "." identifier
+	| Term_1 "*" "-" identifier "." identifier
+	| Term_1 andnot "-" imaginary
+	| Term_1 "&" "-" imaginary
+	| Term_1 lsh "-" imaginary
+	| Term_1 rsh "-" imaginary
+	| Term_1 "%" "-" imaginary
+	| Term_1 "/" "-" imaginary
+	| Term_1 "*" "-" imaginary
+	| Term_1 andnot "-" integer
+	| Term_1 "&" "-" integer
+	| Term_1 lsh "-" integer
+	| Term_1 rsh "-" integer
+	| Term_1 "%" "-" integer
+	| Term_1 "/" "-" integer
+	| Term_1 "*" "-" integer
+	| Term_1 andnot "-" str
+	| Term_1 "&" "-" str
+	| Term_1 lsh "-" str
+	| Term_1 rsh "-" str
+	| Term_1 "%" "-" str
+	| Term_1 "/" "-" str
+	| Term_1 "*" "-" str
+	| Term_1 andnot "-" identifier "(" ")"
+	| Term_1 "&" "-" identifier "(" ")"
+	| Term_1 lsh "-" identifier "(" ")"
+	| Term_1 rsh "-" identifier "(" ")"
+	| Term_1 "%" "-" identifier "(" ")"
+	| Term_1 "/" "-" identifier "(" ")"
+	| Term_1 "*" "-" identifier "(" ")"
+	| Term_1 andnot "-" identifier "." identifier "(" ")"
+	| Term_1 "&" "-" identifier "." identifier "(" ")"
+	| Term_1 lsh "-" identifier "." identifier "(" ")"
+	| Term_1 rsh "-" identifier "." identifier "(" ")"
+	| Term_1 "%" "-" identifier "." identifier "(" ")"
+	| Term_1 "/" "-" identifier "." identifier "(" ")"
+	| Term_1 "*" "-" identifier "." identifier "(" ")"
+	| Term_1 andnot "-" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "&" "-" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 lsh "-" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 rsh "-" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "%" "-" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "/" "-" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "*" "-" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 andnot "-" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "&" "-" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 lsh "-" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 rsh "-" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "%" "-" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "/" "-" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "*" "-" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 andnot "-" "(" Term Expression_1 ")"
+	| Term_1 "&" "-" "(" Term Expression_1 ")"
+	| Term_1 lsh "-" "(" Term Expression_1 ")"
+	| Term_1 rsh "-" "(" Term Expression_1 ")"
+	| Term_1 "%" "-" "(" Term Expression_1 ")"
+	| Term_1 "/" "-" "(" Term Expression_1 ")"
+	| Term_1 "*" "-" "(" Term Expression_1 ")"
+	| Term_1 andnot "+" boolean
+	| Term_1 "&" "+" boolean
+	| Term_1 lsh "+" boolean
+	| Term_1 rsh "+" boolean
+	| Term_1 "%" "+" boolean
+	| Term_1 "/" "+" boolean
+	| Term_1 "*" "+" boolean
+	| Term_1 andnot "+" float
+	| Term_1 "&" "+" float
+	| Term_1 lsh "+" float
+	| Term_1 rsh "+" float
+	| Term_1 "%" "+" float
+	| Term_1 "/" "+" float
+	| Term_1 "*" "+" float
+	| Term_1 andnot "+" identifier
+	| Term_1 "&" "+" identifier
+	| Term_1 lsh "+" identifier
+	| Term_1 rsh "+" identifier
+	| Term_1 "%" "+" identifier
+	| Term_1 "/" "+" identifier
+	| Term_1 "*" "+" identifier
+	| Term_1 andnot "+" identifier "." identifier
+	| Term_1 "&" "+" identifier "." identifier
+	| Term_1 lsh "+" identifier "." identifier
+	| Term_1 rsh "+" identifier "." identifier
+	| Term_1 "%" "+" identifier "." identifier
+	| Term_1 "/" "+" identifier "." identifier
+	| Term_1 "*" "+" identifier "." identifier
+	| Term_1 andnot "+" imaginary
+	| Term_1 "&" "+" imaginary
+	| Term_1 lsh "+" imaginary
+	| Term_1 rsh "+" imaginary
+	| Term_1 "%" "+" imaginary
+	| Term_1 "/" "+" imaginary
+	| Term_1 "*" "+" imaginary
+	| Term_1 andnot "+" integer
+	| Term_1 "&" "+" integer
+	| Term_1 lsh "+" integer
+	| Term_1 rsh "+" integer
+	| Term_1 "%" "+" integer
+	| Term_1 "/" "+" integer
+	| Term_1 "*" "+" integer
+	| Term_1 andnot "+" str
+	| Term_1 "&" "+" str
+	| Term_1 lsh "+" str
+	| Term_1 rsh "+" str
+	| Term_1 "%" "+" str
+	| Term_1 "/" "+" str
+	| Term_1 "*" "+" str
+	| Term_1 andnot "+" identifier "(" ")"
+	| Term_1 "&" "+" identifier "(" ")"
+	| Term_1 lsh "+" identifier "(" ")"
+	| Term_1 rsh "+" identifier "(" ")"
+	| Term_1 "%" "+" identifier "(" ")"
+	| Term_1 "/" "+" identifier "(" ")"
+	| Term_1 "*" "+" identifier "(" ")"
+	| Term_1 andnot "+" identifier "." identifier "(" ")"
+	| Term_1 "&" "+" identifier "." identifier "(" ")"
+	| Term_1 lsh "+" identifier "." identifier "(" ")"
+	| Term_1 rsh "+" identifier "." identifier "(" ")"
+	| Term_1 "%" "+" identifier "." identifier "(" ")"
+	| Term_1 "/" "+" identifier "." identifier "(" ")"
+	| Term_1 "*" "+" identifier "." identifier "(" ")"
+	| Term_1 andnot "+" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "&" "+" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 lsh "+" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 rsh "+" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "%" "+" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "/" "+" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "*" "+" identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 andnot "+" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "&" "+" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 lsh "+" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 rsh "+" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "%" "+" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "/" "+" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 "*" "+" identifier "." identifier "(" Term Expression_1 ExpressionList_1 ")"
+	| Term_1 andnot "+" "(" Term Expression_1 ")"
+	| Term_1 "&" "+" "(" Term Expression_1 ")"
+	| Term_1 lsh "+" "(" Term Expression_1 ")"
+	| Term_1 rsh "+" "(" Term Expression_1 ")"
+	| Term_1 "%" "+" "(" Term Expression_1 ")"
+	| Term_1 "/" "+" "(" Term Expression_1 ")"
+	| Term_1 "*" "+" "(" Term Expression_1 ")" .

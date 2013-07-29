@@ -586,7 +586,7 @@ func orthogonalBNF(expr0 ebnf.Expression) (yy ebnf.Expression) {
 			panic(fmt.Sprintf("internal error %d %T(%v)", lvl, x, x))
 		}
 	}
-	return f(0, expr0)
+	return f(0, NormalizeExpression(expr0))
 }
 
 func (g Grammar) inlineBNF(what string, where map[string]bool) {

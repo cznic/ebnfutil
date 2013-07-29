@@ -480,7 +480,7 @@ func TestInlineEBNF0(t *testing.T) {
 	}
 }
 
-func TestInlineEBNF(t *testing.T) {
+func TestInlineEBNF1(t *testing.T) {
 	for i, fname := range testfiles {
 		fname = filepath.Join(testdata, fname)
 		bsrc, err := ioutil.ReadFile(fname)
@@ -503,6 +503,44 @@ func TestInlineEBNF(t *testing.T) {
 		}
 
 		sname := fname + ".reduced"
+		ref, err := ioutil.ReadFile(sname)
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+
+		if g, e := g2.String(), string(ref); g != e {
+			t.Errorf("----\ngot:\n%s\n----\nexp:\n%s", g, e)
+			continue
+		}
+
+		t.Log(i, fname)
+	}
+}
+
+func TestInlineEBNF2(t *testing.T) {
+	for i, fname := range testfiles {
+		fname = filepath.Join(testdata, fname)
+		bsrc, err := ioutil.ReadFile(fname)
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+
+		src := bytes.NewBuffer(bsrc)
+		g, err := Parse(fname, src)
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+
+		g2 := g.Normalize()
+		if err = g2.Inline("Start", true); err != nil {
+			t.Error(i, err)
+			continue
+		}
+
+		sname := fname + ".inlined"
 		ref, err := ioutil.ReadFile(sname)
 		if err != nil {
 			t.Error(err)
@@ -593,7 +631,7 @@ func TestInlineBNF0(t *testing.T) {
 	}
 }
 
-func TestInlineBNF(t *testing.T) {
+func TestInlineBNF1(t *testing.T) {
 	for i, fname := range testfiles {
 		fname = filepath.Join(testdata, fname)
 		bsrc, err := ioutil.ReadFile(fname)
@@ -634,5 +672,135 @@ func TestInlineBNF(t *testing.T) {
 		}
 
 		t.Log(i, fname)
+	}
+}
+
+func TestInlineBNF2(t *testing.T) {
+	for i, fname := range testfiles {
+		fname = filepath.Join(testdata, fname)
+		bsrc, err := ioutil.ReadFile(fname)
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+
+		src := bytes.NewBuffer(bsrc)
+		g0, err := Parse(fname, src)
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+
+		g1, _, err := g0.BNF("Start", nil)
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+
+		g2 := g1.Normalize()
+		if err = g2.Inline("Start", true); err != nil {
+			t.Error(i, err)
+			continue
+		}
+
+		sname := fname + ".bnf.inlined"
+		ref, err := ioutil.ReadFile(sname)
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+
+		if g, e := g2.String(), string(ref); g != e {
+			t.Errorf("got:\n%s\n----\nexp:\n%s", g2, e)
+			continue
+		}
+
+		t.Log(i, fname)
+	}
+}
+
+func TestBug(t *testing.T) {
+	const src = `// Copyright (c) 2013 Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+float		= . // http://golang.org/ref/spec#float_lit
+identifier	= . // ASCII letters, digits, "_". No front digit.
+imaginary	= . // http://golang.org/ref/spec#imaginary_lit
+integer		= . // http://golang.org/ref/spec#int_lit
+str		= . // http://golang.org/ref/spec#string_lit
+boolean		= "true" | "false" .
+
+andnot 	= "&^" .
+lsh 	= "<<" .
+rsh 	= ">>" .
+
+Expression = Term  { ( "^" | "|" | "-" | "+" ) Term } .
+ExpressionList = Expression { "," Expression } .
+Factor = [ "^" | "!" | "-" | "+" ] Operand .
+Literal = boolean
+	| float
+	| QualifiedIdent
+	| imaginary
+	| integer
+	| str .
+Term = Factor { ( andnot | "&" | lsh  | rsh | "%" | "/" | "*" ) Factor } .
+Operand = Literal
+        | QualifiedIdent "(" [ ExpressionList ] ")"
+        | "(" Expression ")" .
+QualifiedIdent = identifier [ "." identifier ] .`
+
+	for ie := 0; ie < 3; ie++ {
+		for iy := 0; iy < 3; iy++ {
+			r := bytes.NewBufferString(src)
+			g0, err := Parse("bug", r)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if err = g0.Verify("Expression"); err != nil {
+				t.Fatal(err)
+			}
+
+			switch ie {
+			case 0:
+				// nop
+			case 1:
+				if err = g0.Inline("Expression", false); err != nil {
+					t.Error(err)
+					continue
+				}
+			case 2:
+				if err = g0.Inline("Expression", true); err != nil {
+					t.Error(err)
+					continue
+				}
+			default:
+				t.Fatal(ie, "internal error")
+			}
+
+			g1, _, err := g0.BNF("Expression", nil)
+			if err != nil {
+				t.Error(err)
+				continue
+			}
+
+			switch iy {
+			case 0:
+				// nop
+			case 1:
+				if err = g1.Inline("Expression", false); err != nil {
+					t.Error(err)
+					continue
+				}
+			case 2:
+				if err = g1.Inline("Expression", true); err != nil {
+					t.Error(err)
+					continue
+				}
+			default:
+				t.Fatal(iy, "internal error")
+			}
+		}
 	}
 }

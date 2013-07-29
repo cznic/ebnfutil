@@ -1,0 +1,109 @@
+andnot = "&^" .
+boolean = "true" | "false" .
+float = .
+identifier = .
+imaginary = .
+integer = .
+lsh = "<<" .
+rsh = ">>" .
+str = .
+
+Start = (
+		 Term {
+			 (
+				  "^"
+				| "|"
+				| "-"
+				| "+"
+			  ) Term
+		  }
+	  ) .
+Term = [
+		  "^"
+		| "!"
+		| "-"
+		| "+"
+	  ] (
+		  boolean
+		| float
+		| identifier [ "." identifier ]
+		| imaginary
+		| integer
+		| str
+		| identifier [ "." identifier ] "(" [
+			 Term {
+				 (
+					  "^"
+					| "|"
+					| "-"
+					| "+"
+				  ) Term
+			  } {
+				 "," Term {
+					 (
+						  "^"
+						| "|"
+						| "-"
+						| "+"
+					  ) Term
+				  }
+			  }
+		  ] ")"
+		| "(" Term {
+			 (
+				  "^"
+				| "|"
+				| "-"
+				| "+"
+			  ) Term
+		  } ")"
+	  ) {
+		 (
+			  andnot
+			| "&"
+			| lsh
+			| rsh
+			| "%"
+			| "/"
+			| "*"
+		  ) [
+			  "^"
+			| "!"
+			| "-"
+			| "+"
+		  ] (
+			  boolean
+			| float
+			| identifier [ "." identifier ]
+			| imaginary
+			| integer
+			| str
+			| identifier [ "." identifier ] "(" [
+				 Term {
+					 (
+						  "^"
+						| "|"
+						| "-"
+						| "+"
+					  ) Term
+				  } {
+					 "," Term {
+						 (
+							  "^"
+							| "|"
+							| "-"
+							| "+"
+						  ) Term
+					  }
+				  }
+			  ] ")"
+			| "(" Term {
+				 (
+					  "^"
+					| "|"
+					| "-"
+					| "+"
+				  ) Term
+			  } ")"
+		  )
+	  } .
