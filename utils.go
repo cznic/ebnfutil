@@ -1,8 +1,8 @@
-// Copyright 2013 The Go Authors. All rights reserved.
+// Copyright 2014 The ebnfutil Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package ebnfutils (WIP:TODO) provides some utilities for messing with EBNF
+// Package ebnfutil (WIP:TODO) provides some utilities for messing with EBNF
 // grammars.
 //
 // Positions attached to particular ebnf package types instances are ignored in

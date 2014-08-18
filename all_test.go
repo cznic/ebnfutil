@@ -1,4 +1,4 @@
-// Copyright 2013 The Go Authors. All rights reserved.
+// Copyright 2014 The ebnfutil Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -720,7 +720,7 @@ func TestInlineBNF2(t *testing.T) {
 }
 
 func TestBug(t *testing.T) {
-	const src = `// Copyright (c) 2013 Go Authors. All rights reserved.
+	const src = `// Copyright (c) 2013 ebnfutil Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
