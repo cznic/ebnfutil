@@ -15,7 +15,7 @@ import (
 	"strings"
 	"testing"
 
-	"code.google.com/p/go.exp/ebnf"
+	"golang.org/x/exp/ebnf"
 	"github.com/cznic/strutil"
 )
 
