@@ -1,10 +1,5 @@
-ebnfutil
-========
+`github.com/cznic/ebnfutil` has moved to [`modernc.org/ebnfutil`](https://godoc.org/modernc.org/ebnfutil) ([vcs](https://gitlab.com/cznic/ebnfutil)).
 
-Package ebnfutils provides some utilities for messing with EBNF grammars.
+Please update your import paths to `modernc.org/ebnfutil`.
 
-Installation:
-
-    $ go get github.com/cznic/ebnfutil
-
-Documentation: [http://godoc.org/github.com/cznic/ebnfutil](http://godoc.org/github.com/cznic/ebnfutil)
+This repo is now archived.
